@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login – QLINIC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      overflow-x: hidden;
+    }
+
+    .cursor {
+      width: 12px;
+      height: 12px;
+      background: var(--primary);
+      border-radius: 50%;
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: transform .15s ease, background .2s ease;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(22px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0
+      }
+
+      to {
+        opacity: 1
+      }
+    }
+
+    @keyframes fadeLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-28px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0)
+      }
+    }
+
+    @keyframes fadeRight {
+      from {
+        opacity: 0;
+        transform: translateX(28px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0)
+      }
+    }
+
+    @keyframes loaderGrow {
+      from {
+        width: 0
+      }
+
+      to {
+        width: 100%
+      }
+    }
+
+    @keyframes imgKen {
+      from {
+        transform: scale(1.08)
+      }
+
+      to {
+        transform: scale(1)
+      }
+    }
+
+    @keyframes shimmer {
+      0% {
+        background-position: 200% center
+      }
+
+      100% {
+        background-position: -200% center
+      }
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0)
+      }
+
+      50% {
+        transform: translateY(-6px)
+      }
+    }
+
+    @keyframes lockWiggle {
+
+      0%,
+      100% {
+        transform: rotate(0)
+      }
+
+      25% {
+        transform: rotate(-8deg)
+      }
+
+      75% {
+        transform: rotate(8deg)
+      }
+    }
+
+    .page-loader {
+      position: fixed;
+      inset: 0;
+      background: #fff;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 18px;
+      transition: opacity .5s ease, visibility .5s ease;
+    }
+
+    .page-loader.gone {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .loader-brand {
+      font-family: 'Syne', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .loader-bar {
+      width: 180px;
+      height: 3px;
+      background: var(--primary-lt, #d1fae5);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .loader-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 3px;
+      animation: loaderGrow 1.1s ease forwards;
+    }
+
+    .auth-visual {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-visual img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      animation: imgKen 8s ease both;
+    }
+
+    .auth-visual-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(15, 23, 42, .95) 0%, rgba(15, 23, 42, .7) 60%, rgba(7, 130, 90, .3) 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 48px;
+    }
+
+    .auth-visual-brand {
+      font-family: 'Syne', sans-serif !important;
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -1px;
+      margin-bottom: 16px;
+      animation: fadeLeft .6s .2s ease both;
+    }
+
+    .auth-visual-brand .dot {
+      color: var(--accent, #f59e0b);
+    }
+
+    .auth-visual-quote {
+      font-size: 1.05rem;
+      color: rgba(255, 255, 255, .85);
+      line-height: 1.7;
+      font-style: italic;
+      max-width: 380px;
+      margin-bottom: 12px;
+      animation: fadeLeft .6s .35s ease both;
+    }
+
+    .auth-visual-sub {
+      font-size: .8rem;
+      color: rgba(255, 255, 255, .5);
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      animation: fadeLeft .6s .5s ease both;
+    }
+
+    /* Admin-specific floating badge */
+    .visual-badge {
+      position: absolute;
+      background: rgba(15, 23, 42, .7);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 14px;
+      padding: 14px 18px;
+      color: #fff;
+    }
+
+    .visual-badge-1 {
+      top: 32px;
+      right: 32px;
+      animation: float 3.5s ease-in-out infinite, fadeIn .5s .8s ease both;
+    }
+
+    .visual-badge-2 {
+      top: 50%;
+      right: 28px;
+      transform: translateY(-50%);
+      animation: float 4s .5s ease-in-out infinite, fadeIn .5s 1s ease both;
+    }
+
+    .vb-icon {
+      font-size: 1.4rem;
+      margin-bottom: 4px;
+    }
+
+    .vb-label {
+      font-size: .7rem;
+      opacity: .7;
+    }
+
+    .vb-val {
+      font-size: 1rem;
+      font-weight: 800;
+      font-family: 'Syne', sans-serif;
+    }
+
+    /* Restricted badge on visual */
+    .restricted-badge {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      background: rgba(239, 68, 68, .85);
+      backdrop-filter: blur(8px);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: .72rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      animation: fadeIn .5s .6s ease both;
+    }
+
+    .auth-form-side {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 420px;
+      padding: 44px 40px;
+      animation: fadeRight .6s .1s ease both;
+    }
+
+    .auth-logo {
+      font-family: 'Syne', sans-serif !important;
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -1px;
+      margin-bottom: 6px;
+      animation: fadeUp .5s .2s ease both;
+    }
+
+    .auth-logo .dot,
+    .auth-logo span.dot {
+      color: var(--accent, #f59e0b);
+    }
+
+    .auth-tagline {
+      font-size: .9rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      animation: fadeUp .5s .25s ease both;
+    }
+
+    .demo-pill {
+      background: var(--primary-lt, #d1fae5);
+      border: 1px solid rgba(14, 164, 113, .2);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: .8rem;
+      color: var(--primary);
+      margin-bottom: 20px;
+      animation: fadeUp .5s .3s ease both;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .demo-pill::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(14, 164, 113, .1), transparent);
+      background-size: 200% 100%;
+      animation: shimmer 2.5s linear infinite;
+    }
+
+    /* Shield icon above form */
+    .admin-shield {
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dk));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px var(--primary-glow);
+      animation: fadeUp .5s .15s ease both;
+    }
+
+    .form-group {
+      animation: fadeUp .4s ease both;
+    }
+
+    .form-group:nth-child(1) {
+      animation-delay: .35s
+    }
+
+    .form-group:nth-child(2) {
+      animation-delay: .42s
+    }
+
+    .form-control {
+      transition: border-color .2s ease, box-shadow .2s ease !important;
+    }
+
+    .form-control:focus {
+      border-color: var(--primary) !important;
+      box-shadow: 0 0 0 3px rgba(14, 164, 113, .12) !important;
+      outline: none !important;
+    }
+
+    .input-ico {
+      transition: transform .2s ease;
+    }
+
+    .input-wrap:focus-within .input-ico {
+      transform: scale(1.2);
+    }
+
+    /* Lock icon wiggle on password focus */
+    #password:focus+.input-ico,
+    .input-wrap:has(#password:focus) .input-ico {
+      animation: lockWiggle .4s ease;
+    }
+
+    .btn {
+      transition: all .2s ease !important;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .2), transparent);
+      transform: translateX(-100%);
+      transition: transform .5s ease;
+    }
+
+    .btn:hover::before {
+      transform: translateX(100%);
+    }
+
+    .btn-primary {
+      animation: fadeUp .4s .5s ease both;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px) !important;
+      box-shadow: 0 8px 24px var(--primary-glow) !important;
+    }
+
+    .auth-footer {
+      animation: fadeUp .4s .6s ease both;
+    }
+  </style>
+</head>
+
+<body class="auth-page">
+  <div class="cursor" id="cursor"></div>
+  <div class="page-loader" id="loader">
+    <div class="loader-brand">Q<span style="color:var(--accent,#f59e0b)">.</span>LINIC</div>
+    <div class="loader-bar">
+      <div class="loader-fill"></div>
+    </div>
+  </div>
+
+  <div class="auth-visual">
+    <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=900&q=80" alt="Admin" />
+    <div class="restricted-badge">🔒 Restricted Access</div>
+    <div class="visual-badge visual-badge-1">
+      <div class="vb-icon">👥</div>
+      <div class="vb-label">Total patients</div>
+      <div class="vb-val" id="vbPatients">—</div>
+    </div>
+    <div class="visual-badge visual-badge-2">
+      <div class="vb-icon">🩺</div>
+      <div class="vb-label">Doctors</div>
+      <div class="vb-val" id="vbDoctors">—</div>
+    </div>
+    <div class="auth-visual-overlay">
+      <div class="auth-visual-brand">Q<span class="dot">.</span>LINIC</div>
+      <div class="auth-visual-quote">"Complete visibility and control over every aspect of your clinic operations."
+      </div>
+      <div class="auth-visual-sub">Administrator Portal · Restricted Access</div>
+    </div>
+  </div>
+
+  <div class="auth-form-side">
+    <div class="auth-card">
+      <div class="admin-shield">🛡️</div>
+      <div class="auth-logo">Q<span class="dot">.</span>LINIC</div>
+      <div class="auth-tagline">Admin Portal — Restricted Access</div>
+      <div class="demo-pill">🔑 <strong>Demo:</strong> admin &nbsp;/&nbsp; admin123</div>
+      <div id="alert-box"></div>
+      <form id="loginForm" novalidate>
+        <div class="form-group">
+          <label>Admin Username</label>
+          <div class="input-wrap">
+            <span class="input-ico">🛡️</span>
+            <input type="text" id="username" class="form-control" placeholder="admin" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <div class="input-wrap">
+            <span class="input-ico">🔒</span>
+            <input type="password" id="password" class="form-control" placeholder="Admin password" required />
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:8px;">Login →</button>
+      </form>
+      <div class="auth-footer">
+        <a href="index.html" style="color:var(--text-soft);">← Back to Home</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    window.addEventListener('load', () => setTimeout(() => document.getElementById('loader').classList.add('gone'), 1100));
+    const cur = document.getElementById('cursor');
+    document.addEventListener('mousemove', e => { cur.style.left = e.clientX + 'px'; cur.style.top = e.clientY + 'px'; });
+    document.querySelectorAll('a,button').forEach(el => {
+      el.addEventListener('mouseenter', () => { cur.style.transform = 'translate(-50%,-50%) scale(2)'; cur.style.background = 'var(--accent,#f59e0b)'; });
+      el.addEventListener('mouseleave', () => { cur.style.transform = 'translate(-50%,-50%) scale(1)'; cur.style.background = 'var(--primary)'; });
+    });
+
+    // Live stats on visual
+    try {
+      document.getElementById('vbPatients').textContent = DB.getPatients().length || '—';
+      document.getElementById('vbDoctors').textContent = DB.getDoctors().length || '—';
+    } catch (e) { }
+
+    if (Auth.session && Auth.session.role === 'admin') location.href = 'admin_dashboard.html';
+    document.getElementById('loginForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      if (username === 'admin' && password === 'admin123') {
+        Auth.session = { id: 'ADMIN', name: 'Administrator', role: 'admin' };
+        location.href = 'admin_dashboard.html';
+      } else { showAlert('alert-box', 'Invalid admin credentials.'); }
+    });
+  </script>
+</body>
+
+</html>
