@@ -563,11 +563,10 @@
         style="font-size:.75rem;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;">
         Management</div>
       <div class="quick-actions">
-        <a href="admin_patients.html" class="quick-btn"><span class="qb-icon">👥</span>View Patients</a>
-        <a href="admin_doctors.html" class="quick-btn"><span class="qb-icon">🩺</span>Manage Doctors</a>
-        <a href="admin_appointments.html" class="quick-btn"
-          style="border-color:var(--primary);background:var(--primary-lt);color:var(--primary);"><span
-            class="qb-icon">📋</span>All Appointments</a>
+        <button onclick="handleReset()" class="quick-btn"
+          style="border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,0.05);">
+          <span class="qb-icon">🗑️</span>Reset All Bookings
+        </button>
       </div>
     </div>
 
@@ -652,6 +651,14 @@
       }).join('');
     } else {
       tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:28px;">No appointments yet.</td></tr>';
+    }
+
+    function handleReset() {
+      if (confirm('Are you SURE you want to clear all appointments and reset tokens? This cannot be undone.')) {
+        DB.resetAppointments();
+        alert('All appointments have been cleared.');
+        location.reload();
+      }
     }
   </script>
 </body>

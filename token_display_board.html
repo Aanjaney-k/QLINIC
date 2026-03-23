@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Token Board – QLINIC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;700&family=JetBrains+Mono:wght@500;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body {
+      font-family: 'DM Sans', sans-serif;
+      overflow-x: hidden;
+      background: #f8fafc;
+    }
+
+    .cursor {
+      width: 12px;
+      height: 12px;
+      background: var(--primary);
+      border-radius: 50%;
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: transform .15s ease, background .2s ease;
+    }
+
+    .mesh-bg {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      overflow: hidden;
+    }
+
+    .mesh-bg::before {
+      content: '';
+      position: absolute;
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle, rgba(14, 164, 113, .08) 0%, transparent 65%);
+      border-radius: 50%;
+      top: -180px;
+      right: -180px;
+      animation: meshDrift1 12s ease-in-out infinite alternate;
+    }
+
+    .mesh-bg::after {
+      content: '';
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(99, 102, 241, .05) 0%, transparent 65%);
+      border-radius: 50%;
+      bottom: -120px;
+      left: -120px;
+      animation: meshDrift2 10s ease-in-out infinite alternate;
+    }
+
+    @keyframes meshDrift1 {
+      0% {
+        transform: translate(0, 0) scale(1)
+      }
+
+      100% {
+        transform: translate(-50px, 70px) scale(1.12)
+      }
+    }
+
+    @keyframes meshDrift2 {
+      0% {
+        transform: translate(0, 0) scale(1)
+      }
+
+      100% {
+        transform: translate(70px, -50px) scale(1.15)
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0
+      }
+
+      to {
+        opacity: 1
+      }
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(22px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    .topbar {
+      backdrop-filter: blur(20px) !important;
+      background: rgba(255, 255, 255, .88) !important;
+      animation: fadeIn .4s ease;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .board-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .live-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fff;
+      padding: 8px 16px;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      font-size: 0.9rem;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #10b981;
+      animation: blink 1.5s infinite;
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.4;
+      }
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    .token-display {
+      font-family: 'Syne', sans-serif;
+      font-size: 8rem;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1;
+      margin: 20px 0;
+    }
+
+    .serving-card {
+      text-align: center;
+      border: 2px solid var(--primary-lt);
+      background: linear-gradient(to bottom, #fff, var(--primary-lt));
+    }
+
+    .serving-card .label {
+      font-weight: 700;
+      color: var(--primary-dk);
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      font-size: 0.85rem;
+    }
+
+    .patient-name {
+      font-size: 2rem;
+      font-weight: 800;
+      font-family: 'Syne', sans-serif;
+      color: var(--text);
+    }
+
+    .side-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .side-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .side-card {
+      text-align: center;
+    }
+
+    .side-card .token-display {
+      font-size: 3.5rem;
+      margin: 10px 0;
+      color: var(--indigo);
+    }
+
+    .next-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--surface-2);
+      border-radius: 12px;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .next-token-num {
+      color: var(--primary);
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .footer-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .stat-box {
+      background: #fff;
+      padding: 20px;
+      border-radius: 16px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+
+    .stat-val {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .stat-lbl {
+      font-size: 0.75rem;
+      color: var(--text-soft);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .topbar-brand {
+      font-family: 'Syne', sans-serif !important;
+      font-weight: 800 !important;
+    }
+
+    .topbar-brand .q {
+      display: inline-block;
+      animation: bounce 2.5s ease-in-out infinite;
+      color: var(--primary);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="cursor" id="cursor"></div>
+  <div class="mesh-bg"></div>
+
+  <header class="topbar">
+    <div class="topbar-brand"><span class="q">Q</span><span class="dot">.</span>LINIC
+      <span
+        style="font-size:.72rem;font-weight:500;color:var(--text-soft);margin-left:8px;background:var(--surface-2);padding:2px 8px;border-radius:4px;">Patient</span>
+    </div>
+    <nav class="topbar-nav">
+      <a href="patient_dashboard.html">Dashboard</a>
+      <a href="token_display_board.html" class="active">Token Board</a>
+      <a href="patient_view_doctors.html">Doctors</a>
+      <a href="patient_book_appointment.html">Book</a>
+      <a href="patient_my_appointments.html">Appointments</a>
+      <a href="patient_profile.html">Profile</a>
+      <a href="#" onclick="Auth.logout()" class="btn btn-outline btn-sm" style="margin-left:8px;">Logout</a>
+    </nav>
+  </header>
+
+  <div class="board-container">
+    <div class="flex-between" style="margin-bottom: 32px; align-items: flex-end;">
+      <div>
+        <h1 style="font-family:'Syne',sans-serif; font-weight:800; font-size: 2.2rem; margin:0;">Token Display Board
+        </h1>
+        <p class="text-muted" style="margin-top: 5px;">Live queue monitoring system</p>
+      </div>
+      <div class="live-indicator">
+        <span class="live-dot"></span>
+        <span id="currentTime">Loading...</span>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 32px;">
+      <div class="label"
+        style="font-size: 0.75rem; font-weight:700; color: var(--text-soft); text-transform:uppercase; margin-bottom:12px;">
+        Select Department / Doctor</div>
+      <select id="doctorSelect" class="form-control" onchange="updateBoard()"
+        style="max-width: 400px; height: 50px; border-radius: 12px; font-weight: 500;">
+        <!-- Doctors loaded here -->
+      </select>
+    </div>
+
+    <div class="card serving-card">
+      <div class="label">Now Serving</div>
+      <div class="token-display" id="servingToken">#—</div>
+      <div class="patient-name" id="servingName">No patient currently</div>
+      <div id="servingTime"
+        style="margin-top: 10px; color: var(--text-soft); font-family:'JetBrains Mono'; font-weight:500;"></div>
+    </div>
+
+    <div class="side-grid">
+      <div class="card side-card">
+        <div class="label"
+          style="font-weight:700; color: var(--text-soft); text-transform:uppercase; font-size:0.75rem;">Previous Token
+        </div>
+        <div class="token-display" id="prevToken" style="color: var(--accent);">#—</div>
+        <div class="text-muted" id="prevName" style="font-weight:500;">Recently Served</div>
+      </div>
+
+      <div class="card">
+        <div class="label"
+          style="font-weight:700; color: var(--text-soft); text-transform:uppercase; font-size:0.75rem; margin-bottom: 18px;">
+          Next in Queue</div>
+        <div id="nextQueue">
+          <div style="text-align: center; color: var(--text-soft); padding: 20px;">Queue is empty</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-stats">
+      <div class="stat-box">
+        <div class="stat-val" id="totalWaiting">0</div>
+        <div class="stat-lbl">Waiting</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="totalServed">0</div>
+        <div class="stat-lbl">Served Today</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="avgWaitTime">-- mins</div>
+        <div class="stat-lbl">Est. Wait Time</div>
+      </div>
+    </div>
+
+
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('currentTime').textContent = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    const cur = document.getElementById('cursor');
+    document.addEventListener('mousemove', e => { cur.style.left = e.clientX + 'px'; cur.style.top = e.clientY + 'px'; });
+
+    function init() {
+      const doctors = DB.getDoctors().filter(d => d.available);
+      const select = document.getElementById('doctorSelect');
+      select.innerHTML = doctors.map(d => `<option value="${d.id}">${d.name} (${d.speciality})</option>`).join('');
+      updateBoard();
+    }
+
+    function updateBoard() {
+      const doctorId = document.getElementById('doctorSelect').value;
+      if (!doctorId) return;
+
+      const appointments = DB.getAppointments().filter(a => a.doctorId === doctorId);
+
+      const serving = appointments.find(a => a.status === 'Confirmed');
+      if (serving) {
+        const p = DB.patientById(serving.patientId);
+        document.getElementById('servingToken').textContent = `#${serving.token}`;
+        document.getElementById('servingName').textContent = p ? p.name : 'Unknown';
+        document.getElementById('servingTime').textContent = `Called at ${serving.time}`;
+      } else {
+        document.getElementById('servingToken').textContent = '#—';
+        document.getElementById('servingName').textContent = 'No patient currently';
+        document.getElementById('servingTime').textContent = '';
+      }
+
+      const completed = appointments.filter(a => a.status === 'Completed').sort((a, b) => b.token - a.token);
+      if (completed.length > 0) {
+        const p = DB.patientById(completed[0].patientId);
+        document.getElementById('prevToken').textContent = `#${completed[0].token}`;
+        document.getElementById('prevName').textContent = p ? p.name : 'Recently Served';
+      } else {
+        document.getElementById('prevToken').textContent = '#—';
+        document.getElementById('prevName').textContent = 'Recently Served';
+      }
+
+      const pending = appointments.filter(a => a.status === 'Pending').sort((a, b) => a.token - b.token);
+      const queueEl = document.getElementById('nextQueue');
+      if (pending.length > 0) {
+        queueEl.innerHTML = pending.slice(0, 5).map(a => {
+          const p = DB.patientById(a.patientId);
+          return `<div class="next-item"><span class="next-token-num">#${a.token}</span><span>${p ? p.name : 'Pending'}</span><span class="text-muted" style="font-size:0.8rem;">${a.time}</span></div>`;
+        }).join('');
+      } else {
+        queueEl.innerHTML = '<div style="text-align: center; color: var(--text-soft); padding: 20px;">Queue is empty</div>';
+      }
+
+      document.getElementById('totalWaiting').textContent = pending.length;
+      document.getElementById('totalServed').textContent = completed.length;
+      document.getElementById('avgWaitTime').textContent = pending.length > 0 ? (pending.length * 15) + ' mins' : '-- mins';
+    }
+
+    init();
+    setInterval(updateBoard, 5000);
+  </script>
+</body>
+
+</html>

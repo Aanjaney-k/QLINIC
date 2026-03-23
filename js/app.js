@@ -68,6 +68,15 @@ const DB = {
     const nums = list.map(x => parseInt(x.id.replace(prefix, '')) || 0);
     const next  = (Math.max(0, ...nums) + 1).toString().padStart(3, '0');
     return prefix + next;
+  },
+
+  resetAppointments() {
+    localStorage.removeItem('ql_appointments');
+    localStorage.removeItem('ql_token_counter');
+    // We don't remove ql_seeded so it doesn't immediately re-seed with old data
+    // Unless we want it to. Usually "reset" means clear.
+    localStorage.setItem('ql_appointments', '[]');
+    localStorage.setItem('ql_token_counter', '0');
   }
 };
 
