@@ -449,7 +449,7 @@
             }
         }
 
-        @media(max-width:600px) {
+        @media(max-width:768px) {
             .live-banner {
                 grid-template-columns: 1fr;
                 gap: 16px;
@@ -461,7 +461,27 @@
             }
 
             .lb-token-num {
-                font-size: 3.5rem;
+                font-size: 3.2rem;
+            }
+
+            .page-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 16px;
+                text-align: center;
+            }
+
+            .page-header div:last-child {
+                flex-direction: column;
+                margin-left: 0;
+            }
+
+            .page-header .btn {
+                width: 100%;
+            }
+
+            .topbar-brand span:last-child {
+                display: none;
             }
         }
 
@@ -747,8 +767,7 @@
 </head>
 
 <body>
-    <div class="cursor" id="cursor"></div>
-    <div class="mesh-bg"></div>
+      <div class="mesh-bg"></div>
     <div class="page-loader" id="loader">
         <div class="loader-brand">Q<span style="color:var(--accent,#f59e0b)">.</span>LINIC</div>
         <div class="loader-bar">
@@ -762,7 +781,10 @@
             <span
                 style="font-size:.72rem;font-weight:500;color:var(--text-soft);margin-left:8px;background:var(--surface-2);padding:2px 8px;border-radius:4px;">Patient</span>
         </div>
-        <nav class="topbar-nav">
+
+        <button class="menu-toggle" id="menuToggle" style="margin-left:auto;">☰</button>
+
+        <nav class="topbar-nav" id="topbarNav">
             <a href="patient_dashboard.html">Dashboard</a>
             <a href="token_display_board.html">Token Board</a>
             <a href="patient_view_doctors.html">Doctors</a>
@@ -901,12 +923,16 @@
         // ── Init ──────────────────────────────────────────────────────
         window.addEventListener('load', () => setTimeout(() => document.getElementById('loader').classList.add('gone'), 1100));
 
-        const cur = document.getElementById('cursor');
-        document.addEventListener('mousemove', e => { cur.style.left = e.clientX + 'px'; cur.style.top = e.clientY + 'px'; });
-        document.querySelectorAll('a,button').forEach(el => {
-            el.addEventListener('mouseenter', () => { cur.style.transform = 'translate(-50%,-50%) scale(2)'; cur.style.background = 'var(--accent,#f59e0b)'; });
-            el.addEventListener('mouseleave', () => { cur.style.transform = 'translate(-50%,-50%) scale(1)'; cur.style.background = 'var(--primary)'; });
-        });
+
+        // Menu Toggle
+        const menuToggle = document.getElementById('menuToggle');
+        const topbarNav = document.getElementById('topbarNav');
+        if (menuToggle && topbarNav) {
+            menuToggle.addEventListener('click', () => {
+                topbarNav.classList.toggle('open');
+                menuToggle.textContent = topbarNav.classList.contains('open') ? '✕' : '☰';
+            });
+        }
         window.addEventListener('scroll', () => document.getElementById('scrollTop').classList.toggle('visible', window.scrollY > 300));
 
         const session = Auth.requireRole('patient', 'patient_login.html');

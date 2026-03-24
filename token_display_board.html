@@ -18,19 +18,6 @@
       background: #f8fafc;
     }
 
-    .cursor {
-      width: 12px;
-      height: 12px;
-      background: var(--primary);
-      border-radius: 50%;
-      position: fixed;
-      top: 0;
-      left: 0;
-      pointer-events: none;
-      z-index: 9999;
-      transform: translate(-50%, -50%);
-      transition: transform .15s ease, background .2s ease;
-    }
 
     .mesh-bg {
       position: fixed;
@@ -201,6 +188,11 @@
       .side-grid {
         grid-template-columns: 1fr;
       }
+      .flex-between { flex-direction: column; align-items: stretch; gap: 16px; }
+      .token-display { font-size: 4.5rem; }
+      .footer-stats { grid-template-columns: 1fr; }
+      .stat-box { padding: 12px; }
+      .topbar-brand span:last-child { display: none; }
     }
 
     .side-card {
@@ -272,7 +264,6 @@
 </head>
 
 <body>
-  <div class="cursor" id="cursor"></div>
   <div class="mesh-bg"></div>
 
   <header class="topbar">
@@ -280,7 +271,10 @@
       <span
         style="font-size:.72rem;font-weight:500;color:var(--text-soft);margin-left:8px;background:var(--surface-2);padding:2px 8px;border-radius:4px;">Patient</span>
     </div>
-    <nav class="topbar-nav">
+
+    <button class="menu-toggle" id="menuToggle" style="margin-left:auto;">☰</button>
+
+    <nav class="topbar-nav" id="topbarNav">
       <a href="patient_dashboard.html">Dashboard</a>
       <a href="token_display_board.html" class="active">Token Board</a>
       <a href="patient_view_doctors.html">Doctors</a>
@@ -368,8 +362,16 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    const cur = document.getElementById('cursor');
-    document.addEventListener('mousemove', e => { cur.style.left = e.clientX + 'px'; cur.style.top = e.clientY + 'px'; });
+
+    // Menu Toggle
+    const menuToggle = document.getElementById('menuToggle');
+    const topbarNav = document.getElementById('topbarNav');
+    if (menuToggle && topbarNav) {
+      menuToggle.addEventListener('click', () => {
+        topbarNav.classList.toggle('open');
+        menuToggle.textContent = topbarNav.classList.contains('open') ? '✕' : '☰';
+      });
+    }
 
     function init() {
       const doctors = DB.getDoctors().filter(d => d.available);

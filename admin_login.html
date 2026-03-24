@@ -23,19 +23,6 @@
       overflow-x: hidden;
     }
 
-    .cursor {
-      width: 12px;
-      height: 12px;
-      background: var(--primary);
-      border-radius: 50%;
-      position: fixed;
-      top: 0;
-      left: 0;
-      pointer-events: none;
-      z-index: 9999;
-      transform: translate(-50%, -50%);
-      transition: transform .15s ease, background .2s ease;
-    }
 
     @keyframes fadeUp {
       from {
@@ -432,11 +419,17 @@
     .auth-footer {
       animation: fadeUp .4s .6s ease both;
     }
+
+    @media (max-width: 900px) {
+      .auth-page { display: block; overflow: visible; }
+      .auth-visual { display: none; }
+      .auth-form-side { min-height: 100vh; padding: 24px 20px; overflow: visible; }
+      .auth-card { padding: 0; max-width: 100%; }
+    }
   </style>
 </head>
 
 <body class="auth-page">
-  <div class="cursor" id="cursor"></div>
   <div class="page-loader" id="loader">
     <div class="loader-brand">Q<span style="color:var(--accent,#f59e0b)">.</span>LINIC</div>
     <div class="loader-bar">
@@ -498,12 +491,6 @@
   <script src="js/app.js"></script>
   <script>
     window.addEventListener('load', () => setTimeout(() => document.getElementById('loader').classList.add('gone'), 1100));
-    const cur = document.getElementById('cursor');
-    document.addEventListener('mousemove', e => { cur.style.left = e.clientX + 'px'; cur.style.top = e.clientY + 'px'; });
-    document.querySelectorAll('a,button').forEach(el => {
-      el.addEventListener('mouseenter', () => { cur.style.transform = 'translate(-50%,-50%) scale(2)'; cur.style.background = 'var(--accent,#f59e0b)'; });
-      el.addEventListener('mouseleave', () => { cur.style.transform = 'translate(-50%,-50%) scale(1)'; cur.style.background = 'var(--primary)'; });
-    });
 
     // Live stats on visual
     try {

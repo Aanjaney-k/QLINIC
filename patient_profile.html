@@ -23,19 +23,6 @@
       overflow-x: hidden;
     }
 
-    .cursor {
-      width: 12px;
-      height: 12px;
-      background: var(--primary);
-      border-radius: 50%;
-      position: fixed;
-      top: 0;
-      left: 0;
-      pointer-events: none;
-      z-index: 9999;
-      transform: translate(-50%, -50%);
-      transition: transform .15s ease, background .2s ease;
-    }
 
     .mesh-bg {
       position: fixed;
@@ -283,6 +270,8 @@
       .profile-layout {
         grid-template-columns: 1fr;
       }
+      .form-grid { grid-template-columns: 1fr !important; }
+      .topbar-brand span:last-child { display: none; }
     }
 
     .profile-sidebar {
@@ -352,7 +341,6 @@
 </head>
 
 <body>
-  <div class="cursor" id="cursor"></div>
   <div class="mesh-bg"></div>
   <div class="page-loader" id="loader">
     <div class="loader-brand">Q<span style="color:var(--accent,#f59e0b)">.</span>LINIC</div>
@@ -366,7 +354,10 @@
       <span
         style="font-size:.72rem;font-weight:500;color:var(--text-soft);margin-left:8px;background:var(--surface-2);padding:2px 8px;border-radius:4px;">Patient</span>
     </div>
-    <nav class="topbar-nav">
+
+    <button class="menu-toggle" id="menuToggle" style="margin-left:auto;">☰</button>
+
+    <nav class="topbar-nav" id="topbarNav">
       <a href="patient_dashboard.html">Dashboard</a>
       <a href="token_display_board.html">Token Board</a>
       <a href="patient_view_doctors.html">Doctors</a>
@@ -402,7 +393,7 @@
           <div
             style="font-size:.75rem;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px;">
             Personal Information</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
             <div class="form-group" style="grid-column:1/-1;"><label>Full Name</label><input type="text" id="name"
                 class="form-control" required /></div>
             <div class="form-group"><label>Email Address</label><input type="email" id="email" class="form-control"
@@ -422,7 +413,7 @@
             style="font-size:.75rem;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px;">
             Change Password <span style="font-weight:400;text-transform:none;letter-spacing:0;">(leave blank to keep
               current)</span></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
             <div class="form-group"><label>New Password</label><input type="password" id="newPass" class="form-control"
                 placeholder="Min. 6 characters" /></div>
             <div class="form-group"><label>Confirm New Password</label><input type="password" id="confirmPass"
@@ -437,12 +428,16 @@
   <script src="js/app.js"></script>
   <script>
     window.addEventListener('load', () => setTimeout(() => document.getElementById('loader').classList.add('gone'), 1100));
-    const cur = document.getElementById('cursor');
-    document.addEventListener('mousemove', e => { cur.style.left = e.clientX + 'px'; cur.style.top = e.clientY + 'px'; });
-    document.querySelectorAll('a,button').forEach(el => {
-      el.addEventListener('mouseenter', () => { cur.style.transform = 'translate(-50%,-50%) scale(2)'; cur.style.background = 'var(--accent,#f59e0b)'; });
-      el.addEventListener('mouseleave', () => { cur.style.transform = 'translate(-50%,-50%) scale(1)'; cur.style.background = 'var(--primary)'; });
-    });
+
+    // Menu Toggle
+    const menuToggle = document.getElementById('menuToggle');
+    const topbarNav = document.getElementById('topbarNav');
+    if (menuToggle && topbarNav) {
+      menuToggle.addEventListener('click', () => {
+        topbarNav.classList.toggle('open');
+        menuToggle.textContent = topbarNav.classList.contains('open') ? '✕' : '☰';
+      });
+    }
     const session = Auth.requireRole('patient', 'patient_login.html');
     let patient = DB.patientById(session.id);
     document.getElementById('name').value = patient.name;

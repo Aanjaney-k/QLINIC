@@ -51,19 +51,6 @@
     }
 
     /* ── Custom Cursor ── */
-    .cursor {
-      width: 12px;
-      height: 12px;
-      background: var(--primary);
-      border-radius: 50%;
-      position: fixed;
-      top: 0;
-      left: 0;
-      pointer-events: none;
-      z-index: 9999;
-      transform: translate(-50%, -50%);
-      transition: transform .1s ease, width .2s ease, height .2s ease, background .2s ease;
-    }
 
 
     /* ── Animated Background ── */
@@ -499,7 +486,36 @@
 
       .nav-links {
         display: none;
+        position: fixed;
+        top: 72px;
+        left: 0;
+        right: 0;
+        background: #fff;
+        flex-direction: column;
+        padding: 20px;
+        border-bottom: 1px solid var(--border);
+        gap: 10px;
+        box-shadow: 0 10px 15px rgba(0,0,0,0.05);
+        z-index: 150;
       }
+      .nav-links.open { display: flex; }
+      .nav-links a { width: 100%; text-align: center; }
+      .menu-toggle { display: flex !important; }
+      .hide-mobile { display: none !important; }
+    }
+
+    .menu-toggle {
+      display: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      color: var(--text);
     }
 
     /* ── Hero ── */
@@ -512,6 +528,22 @@
       padding: 80px 52px;
       position: relative;
       overflow: hidden;
+    }
+
+    @media (max-width: 960px) {
+      .hero {
+        grid-template-columns: 1fr;
+        padding: 60px 24px;
+        text-align: center;
+      }
+      .hero-title { font-size: clamp(1.8rem, 8vw, 3.2rem); }
+      .hero-sub { margin: 0 auto 36px; font-size: .95rem; }
+      .hero-actions { justify-content: center; gap: 10px; }
+      .btn-hero { padding: 14px 28px; font-size: .95rem; width: 100%; max-width: 320px; }
+      .btn-hero-ghost { padding: 14px 24px; font-size: .9rem; width: 100%; max-width: 320px; }
+      .hero-stats { justify-content: center; gap: 20px; flex-wrap: wrap; }
+      .hero-image { order: -1; margin-bottom: 40px; }
+      .hero-image-wrap img { height: 350px; }
     }
 
     .hero::before {
@@ -565,7 +597,7 @@
 
     .hero-title {
       font-family: 'Syne', sans-serif;
-      font-size: clamp(2.8rem, 5vw, 4.2rem);
+      font-size: clamp(2rem, 5vw, 4.2rem);
       font-weight: 800;
       line-height: 1.08;
       letter-spacing: -2px;
@@ -958,8 +990,11 @@
 
     @media(max-width:600px) {
       .trust {
-        padding: 36px 20px;
+        padding: 32px 20px;
       }
+      .trust-item { padding: 12px 16px; gap: 10px; }
+      .trust-icon { font-size: 1.4rem; }
+      .trust-text strong { font-size: 0.85rem; }
     }
 
     /* ── Section shared ── */
@@ -992,7 +1027,7 @@
 
     .section-title {
       font-family: 'Syne', sans-serif;
-      font-size: 2.4rem;
+      font-size: clamp(1.8rem, 5vw, 2.4rem);
       font-weight: 800;
       color: var(--text);
       letter-spacing: -1px;
@@ -1011,6 +1046,12 @@
     .features {
       background: #f8fafb;
       padding: 88px 52px;
+    }
+
+    @media(max-width:600px) {
+      .features { padding: 44px 20px; }
+      .section-header { margin-bottom: 32px; }
+      .section-sub { font-size: 0.9rem; }
     }
 
     .feature-grid {
@@ -1049,6 +1090,11 @@
     .feature-card:hover {
       transform: translateY(-8px);
       box-shadow: 0 20px 48px rgba(0, 0, 0, .12);
+    }
+
+    @media(max-width:600px) {
+      .feature-card { padding: 20px; }
+      .fc-icon { width: 44px; height: 44px; font-size: 1.4rem; padding: 10px; }
     }
 
     .feature-card:hover::before {
@@ -1371,6 +1417,14 @@
       gap: 12px;
     }
 
+    @media(max-width:768px) {
+      .portal-grid { grid-template-columns: 1fr; max-width: 400px; }
+      .portal-card-img { height: 130px; }
+      .portal-card-body { padding: 18px; }
+      .portal-icon { font-size: 1.8rem; margin-bottom: 8px; }
+      .portal-name { font-size: 1.1rem; }
+    }
+
     @media(max-width:600px) {
       .portals {
         padding: 60px 20px;
@@ -1420,14 +1474,16 @@
     @media(max-width:600px) {
       footer {
         padding: 28px 20px;
+        flex-direction: column;
+        text-align: center;
       }
+      .footer-links { justify-content: center; width: 100%; }
     }
   </style>
 </head>
 
 <body>
 
-  <div class="cursor" id="cursor"></div>
   <div class="mesh-bg"></div>
   <div class="mesh-blob3"></div>
 
@@ -1444,7 +1500,10 @@
   <!-- Nav -->
   <nav class="nav">
     <div class="nav-brand"><span class="q">Q</span><span class="dot">.</span>LINIC</div>
-    <ul class="nav-links">
+    
+    <button class="menu-toggle" id="menuToggle">☰</button>
+
+    <ul class="nav-links" id="navLinks">
       <li><a href="#features"
           onclick="event.preventDefault();document.getElementById('features').scrollIntoView({behavior:'smooth'})">Features</a>
       </li>
@@ -1455,7 +1514,7 @@
           onclick="event.preventDefault();document.getElementById('portals').scrollIntoView({behavior:'smooth'})">Portals</a>
       </li>
     </ul>
-    <a href="#portals" class="btn-nav"
+    <a href="#portals" class="btn-nav hide-mobile"
       onclick="event.preventDefault();document.getElementById('portals').scrollIntoView({behavior:'smooth'})">Get
       Started →</a>
   </nav>
@@ -1726,27 +1785,28 @@
   </footer>
 
   <script>
+    // Menu Toggle
+    const menuToggle = document.getElementById('menuToggle');
+    const navLinks = document.getElementById('navLinks');
+    if (menuToggle && navLinks) {
+      menuToggle.addEventListener('click', () => {
+        navLinks.classList.toggle('open');
+        menuToggle.textContent = navLinks.classList.contains('open') ? '✕' : '☰';
+      });
+      // Close menu on link click
+      navLinks.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+          navLinks.classList.remove('open');
+          menuToggle.textContent = '☰';
+        });
+      });
+    }
+
     // Loader
     window.addEventListener('load', () => {
       setTimeout(() => document.getElementById('loader').classList.add('gone'), 1300);
     });
 
-    // Custom cursor
-    const cursor = document.getElementById('cursor');
-    document.addEventListener('mousemove', e => {
-      cursor.style.left = e.clientX + 'px';
-      cursor.style.top = e.clientY + 'px';
-    });
-    document.querySelectorAll('a, button').forEach(el => {
-      el.addEventListener('mouseenter', () => {
-        cursor.style.transform = 'translate(-50%,-50%) scale(2)';
-        cursor.style.background = 'var(--accent)';
-      });
-      el.addEventListener('mouseleave', () => {
-        cursor.style.transform = 'translate(-50%,-50%) scale(1)';
-        cursor.style.background = 'var(--primary)';
-      });
-    });
 
     // Scroll reveal
     const revealEls = document.querySelectorAll('.reveal');
@@ -1807,9 +1867,11 @@
 
     // Scroll top button
     const stb = document.getElementById('scrollTop');
-    window.addEventListener('scroll', () => {
-      stb.classList.toggle('visible', window.scrollY > 400);
-    });
+    if (stb) {
+      window.addEventListener('scroll', () => {
+        stb.classList.toggle('visible', window.scrollY > 400);
+      });
+    }
   </script>
 </body>
 

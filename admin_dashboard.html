@@ -28,19 +28,6 @@
       overflow-x: hidden;
     }
 
-    .cursor {
-      width: 12px;
-      height: 12px;
-      background: var(--primary);
-      border-radius: 50%;
-      position: fixed;
-      top: 0;
-      left: 0;
-      pointer-events: none;
-      z-index: 9999;
-      transform: translate(-50%, -50%);
-      transition: transform .15s ease, background .2s ease;
-    }
 
     .mesh-bg {
       position: fixed;
@@ -467,20 +454,23 @@
     }
 
     /* Shimmer on pill */
-    .shimmer-text {
-      background: linear-gradient(90deg, rgba(255, 255, 255, .6) 0%, rgba(255, 255, 255, 1) 50%, rgba(255, 255, 255, .6) 100%);
-      background-size: 200% auto;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: shimmer 2.5s linear infinite;
+    /* ── Mobile Banner ── */
+    @media (max-width: 768px) {
+      .dash-banner { height: auto; min-height: 200px; }
+      .dash-banner-overlay { flex-direction: column; padding: 24px; align-items: flex-start; }
+      .dash-banner-overlay > div:last-child { margin-left: 0 !important; margin-top: 16px; width: 100%; }
+      .dbo-badge { flex: 1; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      .topbar-brand span:last-child { display: none; }
     }
   </style>
 </head>
 
 <body>
 
-  <div class="cursor" id="cursor"></div>
   <div class="mesh-bg"></div>
 
   <div class="page-loader" id="loader">
@@ -497,7 +487,10 @@
       <span
         style="font-size:.72rem;font-weight:500;color:var(--text-soft);margin-left:8px;background:var(--surface-2);padding:2px 8px;border-radius:4px;">Admin</span>
     </div>
-    <nav class="topbar-nav">
+    
+    <button class="menu-toggle" id="menuToggle" style="margin-left:auto;">☰</button>
+
+    <nav class="topbar-nav" id="topbarNav">
       <a href="admin_dashboard.html" class="active">Dashboard</a>
       <a href="admin_patients.html">Patients</a>
       <a href="admin_doctors.html">Doctors</a>
@@ -605,12 +598,16 @@
     window.addEventListener('load', () => setTimeout(() => document.getElementById('loader').classList.add('gone'), 1100));
 
     // Cursor
-    const cur = document.getElementById('cursor');
-    document.addEventListener('mousemove', e => { cur.style.left = e.clientX + 'px'; cur.style.top = e.clientY + 'px'; });
-    document.querySelectorAll('a,button').forEach(el => {
-      el.addEventListener('mouseenter', () => { cur.style.transform = 'translate(-50%,-50%) scale(2)'; cur.style.background = 'var(--accent,#f59e0b)'; });
-      el.addEventListener('mouseleave', () => { cur.style.transform = 'translate(-50%,-50%) scale(1)'; cur.style.background = 'var(--primary)'; });
-    });
+
+    // Menu Toggle
+    const menuToggle = document.getElementById('menuToggle');
+    const topbarNav = document.getElementById('topbarNav');
+    if (menuToggle && topbarNav) {
+      menuToggle.addEventListener('click', () => {
+        topbarNav.classList.toggle('open');
+        menuToggle.textContent = topbarNav.classList.contains('open') ? '✕' : '☰';
+      });
+    }
 
     // Scroll top
     const stb = document.getElementById('scrollTop');
