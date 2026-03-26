@@ -270,8 +270,14 @@
       .profile-layout {
         grid-template-columns: 1fr;
       }
-      .form-grid { grid-template-columns: 1fr !important; }
-      .topbar-brand span:last-child { display: none; }
+
+      .form-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      .topbar-brand span:last-child {
+        display: none;
+      }
     }
 
     .profile-sidebar {
@@ -336,6 +342,125 @@
 
     .profile-img-card:hover img {
       transform: scale(1.05);
+    }
+
+    /* ══ QLINIC Global Responsive ══ */
+    @media (min-width: 769px) {
+      .stats-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .page-wrap {
+        padding: 16px 12px 40px !important;
+      }
+
+      .card {
+        padding: 18px 14px !important;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 12px;
+      }
+
+      .stat-val {
+        font-size: 1.8rem !important;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      table {
+        min-width: 480px;
+      }
+
+      th,
+      td {
+        padding: 10px !important;
+        font-size: .8rem;
+      }
+
+      .topbar {
+        padding: 0 14px !important;
+        flex-wrap: wrap;
+      }
+
+      .topbar-brand {
+        font-size: 1.1rem !important;
+      }
+
+      .quick-actions {
+        flex-direction: column !important;
+      }
+
+      .quick-btn {
+        width: 100% !important;
+        justify-content: center;
+      }
+
+      .page-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px;
+      }
+
+      .page-header .btn {
+        width: 100% !important;
+        text-align: center;
+      }
+
+      .flex-between {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px;
+      }
+
+      .flex-between .btn {
+        align-self: stretch;
+        text-align: center;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .topbar-brand span:last-child {
+        display: none;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr !important;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .stats-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .profile-layout {
+        grid-template-columns: 1fr !important;
+      }
+
+      .profile-avatar {
+        margin: 0 auto 16px !important;
+      }
+
+      .profile-info {
+        text-align: center;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr !important;
+      }
     }
   </style>
 </head>

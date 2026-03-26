@@ -188,11 +188,28 @@
       .side-grid {
         grid-template-columns: 1fr;
       }
-      .flex-between { flex-direction: column; align-items: stretch; gap: 16px; }
-      .token-display { font-size: 4.5rem; }
-      .footer-stats { grid-template-columns: 1fr; }
-      .stat-box { padding: 12px; }
-      .topbar-brand span:last-child { display: none; }
+
+      .flex-between {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+      }
+
+      .token-display {
+        font-size: 4.5rem;
+      }
+
+      .footer-stats {
+        grid-template-columns: 1fr;
+      }
+
+      .stat-box {
+        padding: 12px;
+      }
+
+      .topbar-brand span:last-child {
+        display: none;
+      }
     }
 
     .side-card {
@@ -259,6 +276,133 @@
       display: inline-block;
       animation: bounce 2.5s ease-in-out infinite;
       color: var(--primary);
+    }
+
+    /* ══ QLINIC Global Responsive ══ */
+    @media (min-width: 769px) {
+      .stats-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .page-wrap {
+        padding: 16px 12px 40px !important;
+      }
+
+      .card {
+        padding: 18px 14px !important;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 12px;
+      }
+
+      .stat-val {
+        font-size: 1.8rem !important;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      table {
+        min-width: 480px;
+      }
+
+      th,
+      td {
+        padding: 10px !important;
+        font-size: .8rem;
+      }
+
+      .topbar {
+        padding: 0 14px !important;
+        flex-wrap: wrap;
+      }
+
+      .topbar-brand {
+        font-size: 1.1rem !important;
+      }
+
+      .quick-actions {
+        flex-direction: column !important;
+      }
+
+      .quick-btn {
+        width: 100% !important;
+        justify-content: center;
+      }
+
+      .page-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px;
+      }
+
+      .page-header .btn {
+        width: 100% !important;
+        text-align: center;
+      }
+
+      .flex-between {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px;
+      }
+
+      .flex-between .btn {
+        align-self: stretch;
+        text-align: center;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .topbar-brand span:last-child {
+        display: none;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr !important;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .stats-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .side-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      .board-main {
+        font-size: 5rem !important;
+      }
+
+      .board-label {
+        font-size: 1rem !important;
+      }
+
+      .board-header {
+        flex-direction: column !important;
+        gap: 10px;
+        text-align: center;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .board-main {
+        font-size: 3.5rem !important;
+      }
     }
   </style>
 </head>

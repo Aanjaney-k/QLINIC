@@ -12,17 +12,17 @@
     rel="stylesheet">
   <style>
     :root {
-      --primary: #0ea471;
-      --primary-dk: #0b8a5e;
-      --primary-lt: #d1fae5;
-      --primary-glow: rgba(14, 164, 113, .35);
+      --primary: #0891b2;
+      --primary-dk: #0e7490;
+      --primary-lt: #cceff7;
+      --primary-glow: rgba(8, 145, 178, .35);
       --accent: #f59e0b;
       --text: #0d1117;
       --text-muted: #6b7280;
       --text-soft: #9ca3af;
-      --surface: #ffffff;
-      --surface-2: #f8fafb;
-      --border: #e5e7eb;
+      --surface: #edf9fb;
+      --surface-2: #cceff7;
+      --border: #a5d8e6;
       --shadow: 0 2px 12px rgba(0, 0, 0, .08);
       --shadow-md: 0 8px 32px rgba(0, 0, 0, .12);
       --radius-lg: 16px;
@@ -45,7 +45,7 @@
 
     body {
       font-family: 'DM Sans', sans-serif;
-      background: #fff;
+      background: #e0f5f1;
       color: var(--text);
       overflow-x: hidden;
     }
@@ -54,79 +54,20 @@
 
 
     /* ── Animated Background ── */
-    .mesh-bg {
+    #bg-canvas {
       position: fixed;
       inset: 0;
+      width: 100%;
+      height: 100%;
       z-index: -1;
-      overflow: hidden;
-      background: #fff;
     }
 
-    .mesh-bg::before {
-      content: '';
-      position: absolute;
-      width: 800px;
-      height: 800px;
-      background: radial-gradient(circle, rgba(14, 164, 113, .1) 0%, transparent 65%);
-      border-radius: 50%;
-      top: -200px;
-      right: -200px;
-      animation: meshDrift1 12s ease-in-out infinite alternate;
-    }
-
-    .mesh-bg::after {
-      content: '';
-      position: absolute;
-      width: 600px;
-      height: 600px;
-      background: radial-gradient(circle, rgba(99, 102, 241, .07) 0%, transparent 65%);
-      border-radius: 50%;
-      bottom: -150px;
-      left: -150px;
-      animation: meshDrift2 10s ease-in-out infinite alternate;
+    .mesh-bg {
+      display: none;
     }
 
     .mesh-blob3 {
-      position: fixed;
-      width: 400px;
-      height: 400px;
-      background: radial-gradient(circle, rgba(245, 158, 11, .06) 0%, transparent 65%);
-      border-radius: 50%;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      animation: meshDrift3 14s ease-in-out infinite alternate;
-      z-index: -1;
-    }
-
-    @keyframes meshDrift1 {
-      0% {
-        transform: translate(0, 0) scale(1)
-      }
-
-      100% {
-        transform: translate(-60px, 80px) scale(1.15)
-      }
-    }
-
-    @keyframes meshDrift2 {
-      0% {
-        transform: translate(0, 0) scale(1)
-      }
-
-      100% {
-        transform: translate(80px, -60px) scale(1.2)
-      }
-    }
-
-    @keyframes meshDrift3 {
-      0% {
-        transform: translate(-50%, -50%) scale(1)
-      }
-
-      100% {
-        transform: translate(-50%, -50%) scale(1.3)
-      }
+      display: none;
     }
 
     /* ── Keyframes ── */
@@ -318,7 +259,7 @@
     .page-loader {
       position: fixed;
       inset: 0;
-      background: #fff;
+      background: #e0f5f1;
       z-index: 9999;
       display: flex;
       align-items: center;
@@ -490,18 +431,31 @@
         top: 72px;
         left: 0;
         right: 0;
-        background: #fff;
+        background: #e0f5f1;
         flex-direction: column;
         padding: 20px;
         border-bottom: 1px solid var(--border);
         gap: 10px;
-        box-shadow: 0 10px 15px rgba(0,0,0,0.05);
+        box-shadow: 0 10px 15px rgba(0, 0, 0, 0.05);
         z-index: 150;
       }
-      .nav-links.open { display: flex; }
-      .nav-links a { width: 100%; text-align: center; }
-      .menu-toggle { display: flex !important; }
-      .hide-mobile { display: none !important; }
+
+      .nav-links.open {
+        display: flex;
+      }
+
+      .nav-links a {
+        width: 100%;
+        text-align: center;
+      }
+
+      .menu-toggle {
+        display: flex !important;
+      }
+
+      .hide-mobile {
+        display: none !important;
+      }
     }
 
     .menu-toggle {
@@ -536,22 +490,57 @@
         padding: 60px 24px;
         text-align: center;
       }
-      .hero-title { font-size: clamp(1.8rem, 8vw, 3.2rem); }
-      .hero-sub { margin: 0 auto 36px; font-size: .95rem; }
-      .hero-actions { justify-content: center; gap: 10px; }
-      .btn-hero { padding: 14px 28px; font-size: .95rem; width: 100%; max-width: 320px; }
-      .btn-hero-ghost { padding: 14px 24px; font-size: .9rem; width: 100%; max-width: 320px; }
-      .hero-stats { justify-content: center; gap: 20px; flex-wrap: wrap; }
-      .hero-image { order: -1; margin-bottom: 40px; }
-      .hero-image-wrap img { height: 350px; }
+
+      .hero-title {
+        font-size: clamp(1.8rem, 8vw, 3.2rem);
+      }
+
+      .hero-sub {
+        margin: 0 auto 36px;
+        font-size: .95rem;
+      }
+
+      .hero-actions {
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .btn-hero {
+        padding: 14px 28px;
+        font-size: .95rem;
+        width: 100%;
+        max-width: 320px;
+      }
+
+      .btn-hero-ghost {
+        padding: 14px 24px;
+        font-size: .9rem;
+        width: 100%;
+        max-width: 320px;
+      }
+
+      .hero-stats {
+        justify-content: center;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+
+      .hero-image {
+        order: -1;
+        margin-bottom: 40px;
+      }
+
+      .hero-image-wrap img {
+        height: 350px;
+      }
     }
 
     .hero::before {
       content: '';
       position: absolute;
       inset: 0;
-      background-image: linear-gradient(rgba(14, 164, 113, .04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(14, 164, 113, .04) 1px, transparent 1px);
+      background-image: linear-gradient(rgba(8, 145, 178, .04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(8, 145, 178, .04) 1px, transparent 1px);
       background-size: 48px 48px;
       animation: gridPulse 4s ease-in-out infinite;
     }
@@ -572,7 +561,7 @@
       padding: 7px 16px;
       border-radius: 20px;
       margin-bottom: 24px;
-      border: 1px solid rgba(14, 164, 113, .25);
+      border: 1px solid rgba(8, 145, 178, .25);
       animation: fadeUp .5s ease both;
       position: relative;
       overflow: hidden;
@@ -582,7 +571,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(90deg, transparent, rgba(14, 164, 113, .15), transparent);
+      background: linear-gradient(90deg, transparent, rgba(8, 145, 178, .15), transparent);
       background-size: 200% 100%;
       animation: shimmer 2s linear infinite;
     }
@@ -610,7 +599,7 @@
     }
 
     .word-gradient {
-      background: linear-gradient(135deg, #0ea471 0%, #06b6d4 50%, #0ea471 100%);
+      background: linear-gradient(135deg, #0891b2 0%, #06b6d4 50%, #0891b2 100%);
       background-size: 200% auto;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -788,7 +777,7 @@
     /* Floating cards */
     .hero-card {
       position: absolute;
-      background: #fff;
+      background: #e0f5f1;
       border-radius: 18px;
       padding: 14px 18px;
       box-shadow: 0 12px 40px rgba(0, 0, 0, .14);
@@ -939,7 +928,7 @@
     /* ── Trust bar ── */
     .trust {
       padding: 44px 52px;
-      background: #fff;
+      background: #e0f5f1;
       border-bottom: 1px solid var(--border);
     }
 
@@ -964,7 +953,7 @@
 
     .trust-item:hover {
       background: var(--primary-lt);
-      border-color: rgba(14, 164, 113, .2);
+      border-color: rgba(8, 145, 178, .2);
       transform: translateY(-3px);
     }
 
@@ -992,9 +981,19 @@
       .trust {
         padding: 32px 20px;
       }
-      .trust-item { padding: 12px 16px; gap: 10px; }
-      .trust-icon { font-size: 1.4rem; }
-      .trust-text strong { font-size: 0.85rem; }
+
+      .trust-item {
+        padding: 12px 16px;
+        gap: 10px;
+      }
+
+      .trust-icon {
+        font-size: 1.4rem;
+      }
+
+      .trust-text strong {
+        font-size: 0.85rem;
+      }
     }
 
     /* ── Section shared ── */
@@ -1044,14 +1043,22 @@
 
     /* ── Features ── */
     .features {
-      background: #f8fafb;
+      background: #cceff7;
       padding: 88px 52px;
     }
 
     @media(max-width:600px) {
-      .features { padding: 44px 20px; }
-      .section-header { margin-bottom: 32px; }
-      .section-sub { font-size: 0.9rem; }
+      .features {
+        padding: 44px 20px;
+      }
+
+      .section-header {
+        margin-bottom: 32px;
+      }
+
+      .section-sub {
+        font-size: 0.9rem;
+      }
     }
 
     .feature-grid {
@@ -1063,7 +1070,7 @@
     }
 
     .feature-card {
-      background: #fff;
+      background: #e0f5f1;
       border-radius: 20px;
       padding: 30px;
       box-shadow: 0 2px 16px rgba(0, 0, 0, .06);
@@ -1093,8 +1100,16 @@
     }
 
     @media(max-width:600px) {
-      .feature-card { padding: 20px; }
-      .fc-icon { width: 44px; height: 44px; font-size: 1.4rem; padding: 10px; }
+      .feature-card {
+        padding: 20px;
+      }
+
+      .fc-icon {
+        width: 44px;
+        height: 44px;
+        font-size: 1.4rem;
+        padding: 10px;
+      }
     }
 
     .feature-card:hover::before {
@@ -1139,7 +1154,7 @@
     /* ── Stats ── */
     .stats-section {
       padding: 80px 52px;
-      background: linear-gradient(135deg, #0ea471, #0b8a5e);
+      background: linear-gradient(135deg, #0891b2, #0e7490);
       position: relative;
       overflow: hidden;
     }
@@ -1192,7 +1207,7 @@
     /* ── How it works ── */
     .how {
       padding: 88px 52px;
-      background: #fff;
+      background: #e0f5f1;
     }
 
     .steps {
@@ -1288,7 +1303,7 @@
     /* ── Portals ── */
     .portals {
       padding: 88px 52px;
-      background: #f8fafb;
+      background: #cceff7;
     }
 
     .portal-grid {
@@ -1300,7 +1315,7 @@
     }
 
     .portal-card {
-      background: #fff;
+      background: #e0f5f1;
       border-radius: 24px;
       border: 2px solid var(--border);
       overflow: hidden;
@@ -1316,7 +1331,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(135deg, rgba(14, 164, 113, .04), transparent);
+      background: linear-gradient(135deg, rgba(8, 145, 178, .04), transparent);
       opacity: 0;
       transition: opacity .3s ease;
       pointer-events: none;
@@ -1325,7 +1340,7 @@
     .portal-card:hover {
       border-color: var(--primary);
       transform: translateY(-10px);
-      box-shadow: 0 24px 56px rgba(14, 164, 113, .18);
+      box-shadow: 0 24px 56px rgba(8, 145, 178, .18);
     }
 
     .portal-card:hover::after {
@@ -1418,11 +1433,27 @@
     }
 
     @media(max-width:768px) {
-      .portal-grid { grid-template-columns: 1fr; max-width: 400px; }
-      .portal-card-img { height: 130px; }
-      .portal-card-body { padding: 18px; }
-      .portal-icon { font-size: 1.8rem; margin-bottom: 8px; }
-      .portal-name { font-size: 1.1rem; }
+      .portal-grid {
+        grid-template-columns: 1fr;
+        max-width: 400px;
+      }
+
+      .portal-card-img {
+        height: 130px;
+      }
+
+      .portal-card-body {
+        padding: 18px;
+      }
+
+      .portal-icon {
+        font-size: 1.8rem;
+        margin-bottom: 8px;
+      }
+
+      .portal-name {
+        font-size: 1.1rem;
+      }
     }
 
     @media(max-width:600px) {
@@ -1477,15 +1508,18 @@
         flex-direction: column;
         text-align: center;
       }
-      .footer-links { justify-content: center; width: 100%; }
+
+      .footer-links {
+        justify-content: center;
+        width: 100%;
+      }
     }
   </style>
 </head>
 
 <body>
 
-  <div class="mesh-bg"></div>
-  <div class="mesh-blob3"></div>
+  <canvas id="bg-canvas"></canvas>
 
   <!-- Loader -->
   <div class="page-loader" id="loader">
@@ -1500,7 +1534,7 @@
   <!-- Nav -->
   <nav class="nav">
     <div class="nav-brand"><span class="q">Q</span><span class="dot">.</span>LINIC</div>
-    
+
     <button class="menu-toggle" id="menuToggle">☰</button>
 
     <ul class="nav-links" id="navLinks">
@@ -1872,6 +1906,108 @@
         stb.classList.toggle('visible', window.scrollY > 400);
       });
     }
+  </script>
+
+  <script>
+    (function () {
+      const canvas = document.getElementById('bg-canvas');
+      const ctx = canvas.getContext('2d');
+      let W, H, t = 0;
+
+      function resize() {
+        W = canvas.width = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      // Orbs
+      const orbs = [
+        { x: 0.15, y: 0.2, r: 0.45, dx: 0.00055, dy: 0.00040, color: [8, 145, 178], a: 0.18 },
+        { x: 0.80, y: 0.15, r: 0.38, dx: -0.00045, dy: 0.00050, color: [14, 116, 144], a: 0.14 },
+        { x: 0.50, y: 0.70, r: 0.40, dx: 0.00035, dy: -0.00055, color: [6, 182, 212], a: 0.12 },
+        { x: 0.85, y: 0.75, r: 0.32, dx: -0.00050, dy: -0.00035, color: [20, 184, 166], a: 0.10 },
+        { x: 0.30, y: 0.85, r: 0.28, dx: 0.00060, dy: 0.00030, color: [99, 102, 241], a: 0.08 },
+      ];
+
+      // Particles
+      const PARTICLES = 55;
+      const particles = Array.from({ length: PARTICLES }, () => ({
+        x: Math.random(),
+        y: Math.random(),
+        r: Math.random() * 2.5 + 0.8,
+        speed: Math.random() * 0.00022 + 0.00010,
+        angle: Math.random() * Math.PI * 2,
+        drift: (Math.random() - 0.5) * 0.0003,
+        alpha: Math.random() * 0.18 + 0.08,
+      }));
+
+      // Wave lines
+      const WAVES = 4;
+
+      function drawWave(i) {
+        const amp = H * (0.04 + i * 0.018);
+        const freq = 0.0025 - i * 0.0003;
+        const speed = 0.0004 + i * 0.0001;
+        const yBase = H * (0.3 + i * 0.18);
+        const alpha = 0.07 - i * 0.012;
+
+        ctx.beginPath();
+        ctx.moveTo(0, yBase);
+        for (let x = 0; x <= W; x += 4) {
+          const y = yBase + Math.sin(x * freq + t * speed * 1000) * amp
+            + Math.sin(x * freq * 1.7 + t * speed * 700 + i) * amp * 0.4;
+          ctx.lineTo(x, y);
+        }
+        ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+        ctx.fillStyle = `rgba(8,145,178,${alpha})`;
+        ctx.fill();
+      }
+
+      function frame(ts) {
+        t = ts * 0.001;
+        ctx.clearRect(0, 0, W, H);
+
+        // Base background
+        ctx.fillStyle = '#e0f5f1';
+        ctx.fillRect(0, 0, W, H);
+
+        // Orbs
+        for (const o of orbs) {
+          o.x += o.dx; o.y += o.dy;
+          if (o.x < -0.1 || o.x > 1.1) o.dx *= -1;
+          if (o.y < -0.1 || o.y > 1.1) o.dy *= -1;
+          const grd = ctx.createRadialGradient(
+            o.x * W, o.y * H, 0,
+            o.x * W, o.y * H, o.r * Math.min(W, H)
+          );
+          grd.addColorStop(0, `rgba(${o.color},${o.a})`);
+          grd.addColorStop(0.5, `rgba(${o.color},${o.a * 0.4})`);
+          grd.addColorStop(1, `rgba(${o.color},0)`);
+          ctx.fillStyle = grd;
+          ctx.fillRect(0, 0, W, H);
+        }
+
+        // Waves
+        for (let i = WAVES - 1; i >= 0; i--) drawWave(i);
+
+        // Particles
+        for (const p of particles) {
+          p.angle += p.drift;
+          p.x += Math.cos(p.angle) * p.speed;
+          p.y += Math.sin(p.angle) * p.speed * 0.6 - 0.00004;
+          if (p.x < 0) p.x = 1; if (p.x > 1) p.x = 0;
+          if (p.y < 0) p.y = 1; if (p.y > 1) p.y = 0;
+          ctx.beginPath();
+          ctx.arc(p.x * W, p.y * H, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(8,145,178,${p.alpha})`;
+          ctx.fill();
+        }
+
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    })();
   </script>
 </body>
 

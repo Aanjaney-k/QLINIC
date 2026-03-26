@@ -398,13 +398,162 @@
     }
 
     @media (max-width: 768px) {
-      .dash-banner { height: auto; min-height: 160px; }
-      .dash-banner-overlay { padding: 24px; }
-      .stats-grid { grid-template-columns: 1fr 1fr; }
-      .topbar-brand span:last-child { display: none; }
+      .dash-banner {
+        height: auto;
+        min-height: 160px;
+      }
+
+      .dash-banner-overlay {
+        padding: 24px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .topbar-brand span:last-child {
+        display: none;
+      }
     }
+
     @media (max-width: 480px) {
-      .stats-grid { grid-template-columns: 1fr; }
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ══ QLINIC Global Responsive ══ */
+    @media (min-width: 769px) {
+      .stats-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .page-wrap {
+        padding: 16px 12px 40px !important;
+      }
+
+      .card {
+        padding: 18px 14px !important;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 12px;
+      }
+
+      .stat-val {
+        font-size: 1.8rem !important;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      table {
+        min-width: 480px;
+      }
+
+      th,
+      td {
+        padding: 10px !important;
+        font-size: .8rem;
+      }
+
+      .topbar {
+        padding: 0 14px !important;
+        flex-wrap: wrap;
+      }
+
+      .topbar-brand {
+        font-size: 1.1rem !important;
+      }
+
+      .quick-actions {
+        flex-direction: column !important;
+      }
+
+      .quick-btn {
+        width: 100% !important;
+        justify-content: center;
+      }
+
+      .page-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px;
+      }
+
+      .page-header .btn {
+        width: 100% !important;
+        text-align: center;
+      }
+
+      .flex-between {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px;
+      }
+
+      .flex-between .btn {
+        align-self: stretch;
+        text-align: center;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .topbar-brand span:last-child {
+        display: none;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr !important;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .stats-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .dash-banner {
+        height: auto !important;
+      }
+
+      .dash-banner img {
+        min-height: 200px;
+        object-fit: cover;
+      }
+
+      .dash-banner-overlay {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        justify-content: flex-end !important;
+        padding: 20px !important;
+        gap: 14px !important;
+        background: linear-gradient(0deg, rgba(15, 23, 42, .96) 0%, rgba(15, 23, 42, .6) 55%, rgba(15, 23, 42, .15) 100%) !important;
+      }
+
+      .dash-banner-text h2 {
+        font-size: 1.3rem !important;
+      }
+    }
+
+    @media (min-width: 769px) {
+      .dash-banner-overlay {
+        flex-direction: row !important;
+        align-items: center !important;
+        padding: 0 36px !important;
+        background: linear-gradient(90deg, rgba(15, 23, 42, .93) 0%, rgba(15, 23, 42, .6) 55%, rgba(15, 23, 42, .2) 100%) !important;
+      }
     }
   </style>
 </head>

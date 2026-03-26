@@ -372,7 +372,7 @@
       border-radius: var(--radius-xl);
       overflow: hidden;
       margin-bottom: 24px;
-      height: 180px;
+      height: 190px;
       animation: fadeUp .5s ease both;
       box-shadow: 0 12px 40px rgba(0, 0, 0, .15);
     }
@@ -381,6 +381,7 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
+      display: block;
       transition: transform .6s ease;
     }
 
@@ -391,36 +392,47 @@
     .dash-banner-overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(100deg, rgba(15, 23, 42, .92) 0%, rgba(15, 23, 42, .5) 60%, transparent 100%);
+      background: linear-gradient(90deg, rgba(15, 23, 42, .95) 0%, rgba(15, 23, 42, .75) 50%, rgba(15, 23, 42, .45) 100%);
       display: flex;
+      flex-direction: row;
       align-items: center;
+      justify-content: space-between;
       padding: 0 36px;
-      gap: 20px;
+      gap: 24px;
     }
 
     .dbo-text h2 {
       font-family: 'Syne', sans-serif;
-      font-size: 1.7rem;
+      font-size: 1.6rem;
       font-weight: 800;
       color: #fff;
       letter-spacing: -.5px;
+      line-height: 1.2;
     }
 
     .dbo-text p {
       color: rgba(255, 255, 255, .7);
-      font-size: .9rem;
+      font-size: .85rem;
       margin-top: 4px;
+    }
+
+    .dbo-badges-row {
+      display: flex;
+      flex-direction: row;
+      gap: 12px;
+      flex-shrink: 0;
     }
 
     .dbo-badge {
       background: rgba(255, 255, 255, .12);
       border: 1px solid rgba(255, 255, 255, .2);
       border-radius: 12px;
-      padding: 12px 20px;
+      padding: 14px 22px;
       color: #fff;
       text-align: center;
       backdrop-filter: blur(10px);
       transition: transform .2s ease, background .2s ease;
+      min-width: 90px;
     }
 
     .dbo-badge:hover {
@@ -430,17 +442,19 @@
 
     .dbo-badge .db-num {
       font-family: 'Syne', sans-serif;
-      font-size: 1.7rem;
+      font-size: 1.6rem;
       font-weight: 800;
       animation: numberPop .6s .5s ease both;
       opacity: 0;
       animation-fill-mode: both;
+      line-height: 1;
     }
 
     .dbo-badge .db-lbl {
-      font-size: .72rem;
-      opacity: .7;
-      margin-top: 2px;
+      font-size: .7rem;
+      opacity: .75;
+      margin-top: 4px;
+      letter-spacing: .02em;
     }
 
     /* Quick action buttons */
@@ -453,18 +467,144 @@
       box-shadow: 0 6px 16px rgba(0, 0, 0, .1) !important;
     }
 
-    /* Shimmer on pill */
-    /* ── Mobile Banner ── */
-    @media (max-width: 768px) {
-      .dash-banner { height: auto; min-height: 200px; }
-      .dash-banner-overlay { flex-direction: column; padding: 24px; align-items: flex-start; }
-      .dash-banner-overlay > div:last-child { margin-left: 0 !important; margin-top: 16px; width: 100%; }
-      .dbo-badge { flex: 1; }
-      .stats-grid { grid-template-columns: 1fr 1fr; }
+    /* ── Desktop: stats 4 columns ── */
+    @media (min-width: 769px) {
+      .stats-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+      }
     }
+
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+      .page-wrap {
+        padding: 16px 12px 40px !important;
+      }
+
+      .card {
+        padding: 18px 14px !important;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 12px;
+      }
+
+      .stat-val {
+        font-size: 1.8rem !important;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      table {
+        min-width: 520px;
+      }
+
+      th,
+      td {
+        padding: 10px !important;
+        font-size: .8rem;
+      }
+
+      .topbar {
+        padding: 0 14px !important;
+      }
+
+      .topbar-brand {
+        font-size: 1.1rem !important;
+      }
+
+      .quick-actions {
+        flex-direction: column !important;
+      }
+
+      .quick-btn {
+        width: 100% !important;
+        justify-content: center;
+      }
+
+      .page-header h1 {
+        font-size: 1.3rem !important;
+      }
+
+      .flex-between {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px;
+      }
+
+      .flex-between .btn {
+        align-self: stretch;
+        text-align: center;
+      }
+
+      /* Banner: stack on mobile */
+      .dash-banner {
+        height: auto !important;
+      }
+
+      .dash-banner img {
+        min-height: 220px;
+      }
+
+      .dash-banner-overlay {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        justify-content: flex-end !important;
+        padding: 20px !important;
+        gap: 14px !important;
+        background: linear-gradient(0deg, rgba(15, 23, 42, .96) 0%, rgba(15, 23, 42, .7) 55%, rgba(15, 23, 42, .2) 100%) !important;
+      }
+
+      .dbo-badges-row {
+        width: 100%;
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 8px;
+      }
+
+      .dbo-badge {
+        padding: 10px 8px !important;
+        min-width: unset !important;
+      }
+
+      .dbo-badge .db-num {
+        font-size: 1.3rem !important;
+      }
+
+      .dbo-text h2 {
+        font-size: 1.3rem !important;
+      }
+    }
+
     @media (max-width: 480px) {
-      .stats-grid { grid-template-columns: 1fr; }
-      .topbar-brand span:last-child { display: none; }
+      .topbar-brand span:last-child {
+        display: none;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr !important;
+      }
+
+      .dbo-badge .db-num {
+        font-size: 1.1rem !important;
+      }
+
+      .dbo-text h2 {
+        font-size: 1.15rem !important;
+      }
+
+      .dash-banner-overlay {
+        padding: 16px !important;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .stats-grid {
+        grid-template-columns: 1fr !important;
+      }
     }
   </style>
 </head>
@@ -487,7 +627,7 @@
       <span
         style="font-size:.72rem;font-weight:500;color:var(--text-soft);margin-left:8px;background:var(--surface-2);padding:2px 8px;border-radius:4px;">Admin</span>
     </div>
-    
+
     <button class="menu-toggle" id="menuToggle" style="margin-left:auto;">☰</button>
 
     <nav class="topbar-nav" id="topbarNav">
@@ -509,7 +649,7 @@
           <h2>Admin Dashboard</h2>
           <p>System-wide overview of QLINIC</p>
         </div>
-        <div style="margin-left:auto;display:flex;gap:12px;flex-wrap:wrap;">
+        <div class="dbo-badges-row">
           <div class="dbo-badge">
             <div class="db-num" id="bannerPatients">0</div>
             <div class="db-lbl">Patients</div>
