@@ -754,11 +754,33 @@
     window.addEventListener('scroll', () => stb.classList.toggle('visible', window.scrollY > 300));
 
     // App logic
-    Auth.requireRole('admin', 'admin_login.html');
-    const patients = DB.getPatients(), doctors = DB.getDoctors(), appts = DB.getAppointments();
+    const session = Auth.requireRole('admin', 'admin_login.html');
+    const hId = session.hospitalId;
+    const hName = session.hospitalName || 'Clinic';
+
+    // Update UI branding
+    const bannerTitle = document.querySelector('.dbo-text h2');
+    if (bannerTitle) bannerTitle.textContent = `${hName} Dashboard`;
+    const bannerDesc = document.querySelector('.dbo-text p');
+    if (bannerDesc) bannerDesc.textContent = `Management overview for ${hName}`;
+
+    // Filter data by hospital
+    const allDoctors = DB.getDoctors();
+    const allAppts = DB.getAppointments();
+    const allPatients = DB.getPatients();
+
+    const doctors = allDoctors.filter(d => d.hospitalId === hId);
+    const appts = allAppts.filter(a => a.hospitalId === hId);
+    
+    // For patients, we only show those who have at least one appointment at this hospital
+    // (In a more complex system, patients might be explicitly linked to hospitals)
+    const hospitalPatientIds = new Set(appts.map(a => a.patientId));
+    const patients = allPatients.filter(p => hospitalPatientIds.has(p.id));
+
     const completed = appts.filter(a => a.status === 'Completed').length;
 
     function animCount(el, target) {
+      if (!el) return;
       let cur = 0; const step = Math.max(1, Math.ceil(target / 20));
       const iv = setInterval(() => { cur = Math.min(cur + step, target); el.textContent = cur; if (cur >= target) clearInterval(iv); }, 50);
     }
@@ -791,9 +813,11 @@
     }
 
     function handleReset() {
-      if (confirm('Are you SURE you want to clear all appointments and reset tokens? This cannot be undone.')) {
-        DB.resetAppointments();
-        alert('All appointments have been cleared.');
+      if (confirm('Are you SURE you want to clear all appointments for THIS hospital? This cannot be undone.')) {
+        // Only clear appointments for this hospital
+        const remainingAppts = allAppts.filter(a => a.hospitalId !== hId);
+        DB.saveAppointments(remainingAppts);
+        alert('Hospital appointments have been cleared.');
         location.reload();
       }
     }

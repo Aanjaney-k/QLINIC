@@ -379,14 +379,37 @@
     }
 
     @media (max-width: 768px) {
-      .page-header { flex-direction: column; align-items: stretch; gap: 12px; }
-      .filter-bar { flex-direction: column; align-items: stretch; }
-      .filter-bar > div, .filter-bar select, .filter-bar button { width: 100% !important; min-width: 0 !important; }
-      .stats-grid { grid-template-columns: 1fr 1fr; }
-      .topbar-brand span:last-child { display: none; }
+      .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+
+      .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .filter-bar>div,
+      .filter-bar select,
+      .filter-bar button {
+        width: 100% !important;
+        min-width: 0 !important;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .topbar-brand span:last-child {
+        display: none;
+      }
     }
+
     @media (max-width: 480px) {
-      .stats-grid { grid-template-columns: 1fr; }
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -513,10 +536,18 @@
     const stb = document.getElementById('scrollTop');
     window.addEventListener('scroll', () => stb.classList.toggle('visible', window.scrollY > 300));
 
-    Auth.requireRole('admin', 'admin_login.html');
-    const allAppts = DB.getAppointments();
+    const session = Auth.requireRole('admin', 'admin_login.html');
+    const hId = session.hospitalId;
+    const hName = session.hospitalName || 'Clinic';
+
+    // Update UI branding
+    const pageHeader = document.querySelector('.page-header h1');
+    if (pageHeader) pageHeader.textContent = `All Appointments – ${hName}`;
+
+    const allAppts = DB.getAppointments().filter(a => a.hospitalId === hId);
 
     function animCount(el, target) {
+      if (!el) return;
       let c = 0; const step = Math.max(1, Math.ceil(target / 20));
       const iv = setInterval(() => { c = Math.min(c + step, target); el.textContent = c; if (c >= target) clearInterval(iv); }, 50);
     }
@@ -530,7 +561,7 @@
     function renderTable() {
       const q = document.getElementById('searchInput').value.toLowerCase();
       const status = document.getElementById('statusFilter').value;
-      let appts = DB.getAppointments().slice().reverse();
+      let appts = allAppts.slice().reverse();
       if (status) appts = appts.filter(a => a.status === status);
       if (q) {
         appts = appts.filter(a => {
@@ -550,7 +581,7 @@
         const isDone = a.status === 'Cancelled' || a.status === 'Completed';
         const action = isDone
           ? `<button class="btn btn-danger btn-sm" onclick="deleteAppt('${a.id}')">Delete</button>`
-          : `<button class="btn btn-outline btn-sm" onclick="cancelAppt('${a.id}')" ${a.status === 'Cancelled' ? 'disabled' : ''}>Cancel</button>`;
+          : `<div style="display:flex;gap:6px;"><button class="btn btn-outline btn-sm" onclick="cancelAppt('${a.id}')">Cancel</button><button class="btn btn-danger btn-sm" onclick="deleteAppt('${a.id}')">Delete</button></div>`;
         return `<tr style="animation-delay:${i * .04}s">
         <td class="text-muted" style="font-size:.8rem;">${i + 1}</td>
         <td style="font-family:var(--mono);font-size:.72rem;color:var(--text-soft);">${a.id}</td>

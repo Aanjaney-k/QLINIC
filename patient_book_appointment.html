@@ -23,7 +23,6 @@
       overflow-x: hidden;
     }
 
-
     .mesh-bg {
       position: fixed;
       inset: 0;
@@ -128,6 +127,18 @@
       to {
         opacity: 1;
         transform: scale(1)
+      }
+    }
+
+    @keyframes cardPop {
+      from {
+        opacity: 0;
+        transform: translateY(16px) scale(.97)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1)
       }
     }
 
@@ -243,9 +254,243 @@
       animation: fadeUp .5s ease both;
     }
 
+    /* ── Step indicator ── */
+    .steps-bar {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 28px;
+      animation: fadeUp .4s ease both;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      transition: color .3s ease;
+    }
+
+    .step-item.active {
+      color: var(--primary);
+    }
+
+    .step-item.done {
+      color: var(--text-muted);
+    }
+
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .75rem;
+      font-weight: 700;
+      border: 2px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      transition: all .3s ease;
+    }
+
+    .step-item.active .step-num {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .step-item.done .step-num {
+      border-color: var(--primary);
+      background: var(--primary-lt);
+      color: var(--primary);
+    }
+
+    .step-connector {
+      flex: 1;
+      height: 2px;
+      background: var(--border);
+      margin: 0 10px;
+      max-width: 60px;
+      transition: background .3s ease;
+    }
+
+    .step-connector.done {
+      background: var(--primary);
+    }
+
+    /* ── Hospital cards ── */
+    .section-label {
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 14px;
+    }
+
+    .hosp-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+      margin-bottom: 4px;
+    }
+
+    .hosp-card {
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 16px;
+      cursor: pointer;
+      background: var(--surface);
+      transition: all .22s ease;
+      animation: cardPop .35s ease both;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hosp-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(14, 164, 113, .06) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity .22s ease;
+    }
+
+    .hosp-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(14, 164, 113, .13);
+    }
+
+    .hosp-card:hover::before {
+      opacity: 1;
+    }
+
+    .hosp-card.selected {
+      border-color: var(--primary);
+      background: var(--primary-lt);
+      box-shadow: 0 0 0 3px rgba(14, 164, 113, .18);
+    }
+
+    .hosp-card.selected::before {
+      opacity: 1;
+    }
+
+    .hc-icon {
+      font-size: 1.6rem;
+      margin-bottom: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(14, 164, 113, .1);
+    }
+
+    .hc-name {
+      font-weight: 700;
+      font-size: .9rem;
+      color: var(--text);
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+
+    .hc-city {
+      font-size: .76rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .hc-check {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .7rem;
+      opacity: 0;
+      transform: scale(0);
+      transition: all .2s ease;
+    }
+
+    .hosp-card.selected .hc-check {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .no-hospitals {
+      text-align: center;
+      padding: 32px 20px;
+      color: var(--text-muted);
+      font-size: .875rem;
+    }
+
+    /* ── Step panels ── */
+    .step-panel {
+      display: none;
+    }
+
+    .step-panel.active {
+      display: block;
+      animation: fadeUp .35s ease both;
+    }
+
+    /* ── Selected hospital bar (step 2) ── */
+    .hosp-selected-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--primary-lt);
+      border: 1.5px solid rgba(14, 164, 113, .25);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 22px;
+    }
+
+    .hsb-icon {
+      font-size: 1.3rem;
+    }
+
+    .hsb-text {
+      flex: 1;
+    }
+
+    .hsb-name {
+      font-weight: 700;
+      font-size: .9rem;
+      color: var(--text);
+    }
+
+    .hsb-city {
+      font-size: .76rem;
+      color: var(--text-muted);
+    }
+
+    .hsb-change {
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--primary);
+      cursor: pointer;
+      text-decoration: underline;
+      white-space: nowrap;
+    }
+
+    /* ── Book layout ── */
     .book-layout {
       display: grid;
-      grid-template-columns: 1fr 340px;
+      grid-template-columns: 1fr 300px;
       gap: 24px;
       align-items: start;
     }
@@ -258,16 +503,30 @@
       .book-sidebar {
         display: none;
       }
-      .topbar-brand span:last-child { display: none; }
+
+      .topbar-brand span:last-child {
+        display: none;
+      }
+
+      .hosp-cards-grid {
+        grid-template-columns: 1fr 1fr;
+      }
     }
-    @media (max-width: 480px) {
-      .time-grid { grid-template-columns: repeat(3, 1fr); }
+
+    @media(max-width:480px) {
+      .time-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .hosp-cards-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     .book-sidebar img {
       width: 100%;
       border-radius: var(--radius-lg);
-      height: 220px;
+      height: 200px;
       object-fit: cover;
       transition: transform .5s ease;
       box-shadow: 0 12px 32px rgba(0, 0, 0, .12);
@@ -326,6 +585,27 @@
       transform: translateY(-2px);
       box-shadow: 0 4px 12px var(--primary-glow);
     }
+
+    .btn-back {
+      background: none;
+      border: 1.5px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: .82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s ease;
+      margin-bottom: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-back:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
   </style>
 </head>
 
@@ -343,12 +623,10 @@
       <span
         style="font-size:.72rem;font-weight:500;color:var(--text-soft);margin-left:8px;background:var(--surface-2);padding:2px 8px;border-radius:4px;">Patient</span>
     </div>
-
     <button class="menu-toggle" id="menuToggle" style="margin-left:auto;">☰</button>
-
     <nav class="topbar-nav" id="topbarNav">
       <a href="patient_dashboard.html">Dashboard</a>
-      <a href="token_display_board.html">Token Board</a>
+      <a href="patient_token_view.html">Token View</a>
       <a href="patient_view_doctors.html">Doctors</a>
       <a href="patient_book_appointment.html" class="active">Book</a>
       <a href="patient_my_appointments.html">Appointments</a>
@@ -361,39 +639,70 @@
     <div class="page-header">
       <div>
         <h1>Book an Appointment</h1>
-        <p>Select a doctor, date and time slot</p>
+        <p>Choose a hospital, then pick your doctor &amp; time</p>
       </div>
     </div>
+
     <div class="book-layout">
-      <div class="card">
+      <div class="card" style="padding:28px;">
         <div id="alert-box"></div>
-        <form id="bookForm" novalidate>
-          <div class="form-group">
-            <label>Select Doctor</label>
-            <select id="doctor" class="form-control" required>
-              <option value="">— Choose a doctor —</option>
-            </select>
+
+        <!-- Step indicator -->
+        <div class="steps-bar" id="stepsBar">
+          <div class="step-item active" id="step1Indicator">
+            <div class="step-num">1</div>
+            <span>Select Hospital</span>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="step-connector" id="stepConnector"></div>
+          <div class="step-item" id="step2Indicator">
+            <div class="step-num">2</div>
+            <span>Book Appointment</span>
+          </div>
+        </div>
+
+        <!-- Step 1: Hospital selection -->
+        <div class="step-panel active" id="step1Panel">
+          <div class="section-label">Available Hospitals</div>
+          <div class="hosp-cards-grid" id="hospGrid">
+            <!-- rendered by JS -->
+          </div>
+          <button class="btn btn-primary btn-block" id="continueBtn"
+            style="margin-top:20px;opacity:.4;pointer-events:none;" onclick="goToStep2()">Continue →</button>
+        </div>
+
+        <!-- Step 2: Booking form -->
+        <div class="step-panel" id="step2Panel">
+          <button class="btn-back" onclick="goToStep1()">← Back</button>
+          <div class="hosp-selected-bar" id="hospSelectedBar"></div>
+          <form id="bookForm" novalidate>
             <div class="form-group">
-              <label>Preferred Date</label>
-              <input type="date" id="date" class="form-control" required />
+              <label>Select Doctor</label>
+              <select id="doctor" class="form-control" required>
+                <option value="">— Choose a doctor —</option>
+              </select>
             </div>
-            <div class="form-group" style="display:flex;flex-direction:column;">
-              <label>Selected Time</label>
-              <input type="text" id="timeDisplay" class="form-control" placeholder="Click a slot below" readonly
-                style="cursor:pointer;" required />
-              <input type="hidden" id="time" />
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+              <div class="form-group">
+                <label>Preferred Date</label>
+                <input type="date" id="date" class="form-control" required />
+              </div>
+              <div class="form-group" style="display:flex;flex-direction:column;">
+                <label>Selected Time</label>
+                <input type="text" id="timeDisplay" class="form-control" placeholder="Click a slot below" readonly
+                  style="cursor:pointer;" required />
+                <input type="hidden" id="time" />
+              </div>
             </div>
-          </div>
-          <div class="form-group">
-            <label>Available Time Slots</label>
-            <div class="time-grid" id="timeGrid"></div>
-          </div>
-          <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:8px;">Confirm Booking
-            →</button>
-        </form>
+            <div class="form-group">
+              <label>Available Time Slots</label>
+              <div class="time-grid" id="timeGrid"></div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:8px;">Confirm Booking
+              →</button>
+          </form>
+        </div>
       </div>
+
       <div class="book-sidebar">
         <img src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=600&q=80" alt="Booking" />
         <div class="info-block">
@@ -411,20 +720,8 @@
     const session = Auth.requireRole('patient', 'patient_login.html');
     const params = new URLSearchParams(location.search);
     const preDoc = params.get('doctorId');
-    const docSel = document.getElementById('doctor');
-    DB.getDoctors().filter(d => d.available).forEach(d => {
-      const opt = document.createElement('option');
-      opt.value = d.id; opt.textContent = `${d.name} — ${d.speciality}`;
-      if (preDoc && d.id === preDoc) opt.selected = true;
-      docSel.appendChild(opt);
-    });
-    document.getElementById('date').min = new Date().toISOString().split('T')[0];
 
-    const slots = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
-    const grid = document.getElementById('timeGrid');
-    grid.innerHTML = slots.map((s, i) => `<div class="time-slot" style="animation-delay:${i * .04}s" onclick="selectSlot('${s}',this)">${s}</div>`).join('');
-
-    // Menu Toggle
+    // Menu toggle
     const menuToggle = document.getElementById('menuToggle');
     const topbarNav = document.getElementById('topbarNav');
     if (menuToggle && topbarNav) {
@@ -434,6 +731,106 @@
       });
     }
 
+    // ── State ──
+    let selectedHosp = HospitalSession.get(); // pre-selected from dashboard if any
+
+    // ── Render hospital cards ──
+    const hospitals = SuperDB.getHospitals().filter(h => h.status === 'active');
+    const hospGrid = document.getElementById('hospGrid');
+
+    function renderHospCards() {
+      if (!hospitals.length) {
+        hospGrid.innerHTML = '<div class="no-hospitals">🏥 No hospitals available at this time.</div>';
+        return;
+      }
+      hospGrid.innerHTML = hospitals.map((h, i) => `
+        <div class="hosp-card ${selectedHosp && selectedHosp.id === h.id ? 'selected' : ''}"
+             style="animation-delay:${i * .07}s"
+             onclick="selectHospCard('${h.id}','${h.name.replace(/'/g, "\'")}','${h.city.replace(/'/g, "\'")}',this)">
+          <div class="hc-check">✓</div>
+          <div class="hc-icon">🏥</div>
+          <div class="hc-name">${h.name}</div>
+          <div class="hc-city">📍 ${h.city}</div>
+        </div>
+      `).join('');
+
+      // If already pre-selected, enable continue
+      if (selectedHosp) enableContinue();
+    }
+
+    function selectHospCard(id, name, city, el) {
+      document.querySelectorAll('.hosp-card').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedHosp = { id, name, city };
+      HospitalSession.set(selectedHosp);
+      enableContinue();
+    }
+
+    function enableContinue() {
+      const btn = document.getElementById('continueBtn');
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = 'auto';
+    }
+
+    function goToStep2() {
+      if (!selectedHosp) return;
+
+      // Update step indicators
+      document.getElementById('step1Indicator').classList.remove('active');
+      document.getElementById('step1Indicator').classList.add('done');
+      document.getElementById('step1Indicator').querySelector('.step-num').textContent = '✓';
+      document.getElementById('stepConnector').classList.add('done');
+      document.getElementById('step2Indicator').classList.add('active');
+
+      // Switch panels
+      document.getElementById('step1Panel').classList.remove('active');
+      document.getElementById('step2Panel').classList.add('active');
+
+      // Render selected hospital bar
+      document.getElementById('hospSelectedBar').innerHTML = `
+        <span class="hsb-icon">🏥</span>
+        <div class="hsb-text">
+          <div class="hsb-name">${selectedHosp.name}</div>
+          <div class="hsb-city">📍 ${selectedHosp.city}</div>
+        </div>
+        <span class="hsb-change" onclick="goToStep1()">Change</span>
+      `;
+
+      // Populate doctors for this hospital
+      const docSel = document.getElementById('doctor');
+      docSel.innerHTML = '<option value="">— Choose a doctor —</option>';
+      const filteredDoctors = DB.getDoctors().filter(d => d.available && d.hospitalId === selectedHosp.id);
+      if (!filteredDoctors.length) {
+        docSel.innerHTML = '<option value="">— No doctors available —</option>';
+      } else {
+        filteredDoctors.forEach(d => {
+          const opt = document.createElement('option');
+          opt.value = d.id;
+          opt.textContent = `${d.name} — ${d.speciality}`;
+          if (preDoc && d.id === preDoc) opt.selected = true;
+          docSel.appendChild(opt);
+        });
+      }
+    }
+
+    function goToStep1() {
+      document.getElementById('step1Indicator').classList.add('active');
+      document.getElementById('step1Indicator').classList.remove('done');
+      document.getElementById('step1Indicator').querySelector('.step-num').textContent = '1';
+      document.getElementById('stepConnector').classList.remove('done');
+      document.getElementById('step2Indicator').classList.remove('active');
+      document.getElementById('step1Panel').classList.add('active');
+      document.getElementById('step2Panel').classList.remove('active');
+    }
+
+    // Time slots
+    document.getElementById('date').min = new Date().toISOString().split('T')[0];
+    const slots = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
+    const grid = document.getElementById('timeGrid');
+    grid.innerHTML = slots.map((s, i) =>
+      `<div class="time-slot" style="animation-delay:${i * .04}s" onclick="selectSlot('${s}',this)">${s}</div>`
+    ).join('');
+
     function selectSlot(t, el) {
       document.querySelectorAll('.time-slot').forEach(x => x.classList.remove('selected'));
       el.classList.add('selected');
@@ -441,9 +838,10 @@
       document.getElementById('timeDisplay').value = t;
     }
 
+    // Submit
     document.getElementById('bookForm').addEventListener('submit', function (e) {
       e.preventDefault();
-      const doctorId = docSel.value;
+      const doctorId = document.getElementById('doctor').value;
       const date = document.getElementById('date').value;
       const time = document.getElementById('time').value;
       if (!doctorId || !date || !time) return showAlert('alert-box', 'Please fill in all fields and select a time slot.');
@@ -451,12 +849,23 @@
       const dup = appointments.find(a => a.patientId === session.id && a.doctorId === doctorId && a.date === date && a.status !== 'Cancelled');
       if (dup) return showAlert('alert-box', 'You already have an appointment with this doctor on that date.');
       const token = DB.nextToken();
-      const appt = { id: DB.nextId('A', appointments), patientId: session.id, doctorId, date, time, status: 'Pending', token, prescription: '' };
+      const appt = {
+        id: DB.nextId('A', appointments),
+        patientId: session.id, doctorId, date, time,
+        status: 'Pending', token, prescription: '',
+        hospitalId: selectedHosp ? selectedHosp.id : null
+      };
       appointments.push(appt);
       DB.saveAppointments(appointments);
       sessionStorage.setItem('ql_last_appt', JSON.stringify(appt));
       location.href = 'patient_token.html';
     });
+
+    // Init
+    renderHospCards();
+
+    // If patient came from dashboard with a hospital already selected, go straight to step 2
+    if (selectedHosp) goToStep2();
   </script>
 </body>
 

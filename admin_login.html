@@ -503,10 +503,28 @@
       e.preventDefault();
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value;
+
+      // 1. Check for global demo admin
       if (username === 'admin' && password === 'admin123') {
-        Auth.session = { id: 'ADMIN', name: 'Administrator', role: 'admin' };
+        Auth.session = { id: 'ADMIN', name: 'Administrator', role: 'admin', hospitalId: 'H_DEMO1', hospitalName: 'QLINIC City Hospital' };
         location.href = 'admin_dashboard.html';
-      } else { showAlert('alert-box', 'Invalid admin credentials.'); }
+        return;
+      }
+
+      // 2. Check for hospital-specific admins
+      const admin = SuperDB.adminByUsername(username);
+      if (admin && admin.password === password) {
+        Auth.session = {
+          id: admin.id,
+          name: admin.name,
+          role: 'admin',
+          hospitalId: admin.hospitalId,
+          hospitalName: admin.hospitalName
+        };
+        location.href = 'admin_dashboard.html';
+      } else {
+        showAlert('alert-box', 'Invalid admin credentials.');
+      }
     });
   </script>
 </body>

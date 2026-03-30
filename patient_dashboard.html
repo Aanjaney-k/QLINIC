@@ -528,6 +528,180 @@
         grid-template-columns: 1fr !important;
       }
     }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.3;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .td-main-grid {
+        grid-template-columns: 1fr !important;
+      }
+
+      .td-main-grid>div:first-child {
+        grid-column: 1 !important;
+      }
+    }
+
+    /* ── Hospital Selection Section ── */
+    .hospital-section-title {
+      font-size: .75rem;
+      font-weight: 700;
+      color: var(--text-soft);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 14px;
+    }
+
+    .hospital-section-heading {
+      font-size: 1rem;
+      font-weight: 700;
+      font-family: 'Syne', sans-serif;
+      margin-bottom: 16px;
+    }
+
+    .hospitals-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .hosp-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px 16px;
+      cursor: pointer;
+      transition: all .2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hosp-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px var(--primary-glow);
+    }
+
+    .hosp-card.selected {
+      border-color: var(--primary);
+      background: var(--primary-lt);
+    }
+
+    .hosp-card.selected::after {
+      content: '✓';
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      width: 22px;
+      height: 22px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .75rem;
+      font-weight: 800;
+    }
+
+    .hosp-icon {
+      font-size: 1.6rem;
+      margin-bottom: 4px;
+    }
+
+    .hosp-name {
+      font-weight: 700;
+      font-size: .9rem;
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      line-height: 1.3;
+    }
+
+    .hosp-city {
+      font-size: .78rem;
+      color: var(--text-muted);
+    }
+
+    .hosp-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: .72rem;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    .hosp-status .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #22c55e;
+    }
+
+    .selected-hospital-bar {
+      display: none;
+      background: var(--primary);
+      color: #fff;
+      border-radius: var(--radius-lg);
+      padding: 12px 18px;
+      margin-bottom: 16px;
+      align-items: center;
+      gap: 10px;
+      animation: fadeUp .3s ease;
+    }
+
+    .selected-hospital-bar.visible {
+      display: flex;
+    }
+
+    .shb-text {
+      flex: 1;
+      font-size: .875rem;
+      font-weight: 600;
+    }
+
+    .shb-change {
+      font-size: .78rem;
+      opacity: .8;
+      cursor: pointer;
+      text-decoration: underline;
+      flex-shrink: 0;
+    }
+
+    .no-hospitals {
+      text-align: center;
+      padding: 32px 20px;
+      color: var(--text-muted);
+    }
+
+    .no-hospitals .ni {
+      font-size: 2.5rem;
+      margin-bottom: 8px;
+    }
+
+    @media (max-width:480px) {
+      .hospitals-grid {
+        grid-template-columns: 1fr 1fr !important;
+      }
+    }
+
+    @media (max-width:360px) {
+      .hospitals-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
   </style>
 </head>
 
@@ -551,7 +725,7 @@
 
     <nav class="topbar-nav" id="topbarNav">
       <a href="patient_dashboard.html" class="active">Dashboard</a>
-      <a href="token_display_board.html">Token Board</a>
+      <a href="patient_token_view.html">Token View</a>
       <a href="patient_view_doctors.html">Doctors</a>
       <a href="patient_book_appointment.html">Book</a>
       <a href="patient_my_appointments.html">Appointments</a>
@@ -561,12 +735,22 @@
   </header>
 
   <div class="page-wrap">
+    <!-- Selected hospital indicator bar -->
+    <div class="selected-hospital-bar" id="selectedBar">
+      <span>🏥</span>
+      <span class="shb-text" id="selectedBarText">Hospital selected</span>
+      <span class="shb-change" onclick="clearHospital()">Change hospital</span>
+    </div>
+
     <div class="dash-banner">
       <img src="https://images.unsplash.com/photo-1538108149393-fbbd81895907?w=1200&q=80" alt="Clinic" />
       <div class="dash-banner-overlay">
         <div class="dash-banner-text">
           <h2 id="welcomeMsg">Welcome back!</h2>
-          <p>Here's your health activity summary</p>
+          <p id="bannerSub">Here's your health activity summary</p>
+        </div>
+        <div class="banner-action">
+          <a href="patient_book_appointment.html" id="bookBtn">+ Book Appointment</a>
         </div>
       </div>
     </div>
@@ -595,6 +779,101 @@
     </div>
 
 
+
+    <!-- Live Token Display Board -->
+    <div class="card anim-fadeup d2" style="padding: 28px 28px 24px;">
+
+      <!-- Header -->
+      <div class="flex-between" style="margin-bottom: 20px; align-items: center;">
+        <div>
+          <div
+            style="font-size:.75rem;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">
+            Live Queue</div>
+          <div style="font-size:1rem;font-weight:700;font-family:'Syne',sans-serif;">Token Display Board</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div
+            style="display:flex;align-items:center;gap:7px;background:var(--surface-2);padding:6px 14px;border-radius:100px;font-size:0.82rem;font-weight:600;border:1px solid var(--border);">
+            <span id="tdLiveDot"
+              style="width:8px;height:8px;background:#10b981;border-radius:50%;box-shadow:0 0 8px #10b981;animation:blink 1.5s infinite;display:inline-block;"></span>
+            LIVE
+          </div>
+        </div>
+      </div>
+
+      <!-- Doctor selector -->
+      <div style="margin-bottom:20px;">
+        <select id="tdDoctorSelect" class="form-control" onchange="tdUpdateBoard()"
+          style="max-width:360px;height:44px;border-radius:10px;font-weight:500;font-size:.875rem;">
+          <option value="">Loading doctors...</option>
+        </select>
+      </div>
+
+      <!-- Main board: Now Serving + side panels -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;" class="td-main-grid">
+
+        <!-- Now Serving -->
+        <div
+          style="grid-column:1/2;text-align:center;background:linear-gradient(to bottom,#fff,var(--primary-lt));border:2px solid var(--primary-lt);border-radius:18px;padding:24px 16px;">
+          <div
+            style="font-size:.72rem;font-weight:700;color:var(--primary-dk);text-transform:uppercase;letter-spacing:.15em;">
+            Now Serving</div>
+          <div id="tdServingToken"
+            style="font-family:'Syne',sans-serif;font-size:4.5rem;font-weight:800;color:var(--primary);line-height:1;margin:10px 0;">
+            #—</div>
+          <div id="tdServingName"
+            style="font-size:1rem;font-weight:700;font-family:'Syne',sans-serif;color:var(--text);">No patient currently
+          </div>
+          <div id="tdServingTime"
+            style="margin-top:6px;color:var(--text-soft);font-family:'JetBrains Mono',monospace;font-size:.8rem;font-weight:500;">
+          </div>
+        </div>
+
+        <!-- Previous Token -->
+        <div
+          style="text-align:center;background:#fff;border:1px solid var(--border);border-radius:18px;padding:24px 16px;display:flex;flex-direction:column;justify-content:center;">
+          <div
+            style="font-size:.72rem;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">
+            Previous</div>
+          <div id="tdPrevToken"
+            style="font-family:'Syne',sans-serif;font-size:2.8rem;font-weight:800;color:var(--indigo);line-height:1;margin:6px 0;">
+            #—</div>
+          <div id="tdPrevName" style="font-size:.82rem;color:var(--text-muted);font-weight:500;">Recently Served</div>
+        </div>
+
+        <!-- Next in Queue -->
+        <div style="background:#fff;border:1px solid var(--border);border-radius:18px;padding:20px 16px;">
+          <div
+            style="font-size:.72rem;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:.12em;margin-bottom:14px;">
+            Next in Queue</div>
+          <div id="tdNextQueue">
+            <div style="text-align:center;color:var(--text-soft);padding:16px;font-size:.85rem;">Queue is empty</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer stats -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+        <div
+          style="background:var(--surface);padding:14px;border-radius:14px;text-align:center;border:1px solid var(--border);">
+          <div id="tdTotalWaiting" style="font-size:1.4rem;font-weight:800;color:var(--text);">0</div>
+          <div style="font-size:.7rem;color:var(--text-soft);text-transform:uppercase;font-weight:700;margin-top:2px;">
+            Waiting</div>
+        </div>
+        <div
+          style="background:var(--surface);padding:14px;border-radius:14px;text-align:center;border:1px solid var(--border);">
+          <div id="tdTotalServed" style="font-size:1.4rem;font-weight:800;color:var(--text);">0</div>
+          <div style="font-size:.7rem;color:var(--text-soft);text-transform:uppercase;font-weight:700;margin-top:2px;">
+            Served Today</div>
+        </div>
+        <div
+          style="background:var(--surface);padding:14px;border-radius:14px;text-align:center;border:1px solid var(--border);">
+          <div id="tdAvgWait" style="font-size:1.4rem;font-weight:800;color:var(--text);">— mins</div>
+          <div style="font-size:.7rem;color:var(--text-soft);text-transform:uppercase;font-weight:700;margin-top:2px;">
+            Est. Wait</div>
+        </div>
+      </div>
+    </div>
 
     <div class="card anim-fadeup d3">
       <div class="flex-between" style="margin-bottom:18px;">
@@ -644,14 +923,82 @@
     }
     const session = Auth.requireRole('patient', 'patient_login.html');
     document.getElementById('welcomeMsg').textContent = `Welcome back, ${session.name}!`;
+
+    function animCount(el, target) {
+      let c = 0; const step = Math.max(1, Math.ceil(target / 20));
+      const iv = setInterval(() => { c = Math.min(c + step, target); el.textContent = c; if (c >= target) clearInterval(iv); }, 50);
+    }
+
+    // ── Hospital selection ──
+    function renderHospitals() {
+      const hospitals = SuperDB.getHospitals().filter(h => h.status === 'active');
+      const grid = document.getElementById('hospitalsGrid');
+      const selected = HospitalSession.get();
+
+      if (!hospitals.length) {
+        grid.innerHTML = `<div class="no-hospitals" style="grid-column:1/-1;"><div class="ni">🏥</div><p>No hospitals available yet. Please contact your administrator.</p></div>`;
+        return;
+      }
+
+      grid.innerHTML = hospitals.map((h, i) => `
+        <div class="hosp-card ${selected && selected.id === h.id ? 'selected' : ''}"
+             style="animation:fadeUp .4s ${i * .07}s ease both;"
+             onclick="selectHospital('${h.id}','${h.name.replace(/'/g, "\'")}','${h.city.replace(/'/g, "\'")}')">
+          <div class="hosp-icon">🏥</div>
+          <div class="hosp-name">${h.name}</div>
+          <div class="hosp-city">📍 ${h.city}</div>
+          <div class="hosp-status"><span class="dot"></span> Active</div>
+        </div>`).join('');
+    }
+
+    function selectHospital(id, name, city) {
+      HospitalSession.set({ id, name, city });
+      renderHospitals();
+      updateSelectedBar();
+      // Update banner subtitle
+      document.getElementById('bannerSub').textContent = `Booking at ${name}`;
+      showAlert('alert-box-dash', `Hospital selected: ${name}`, 'success');
+    }
+
+    function clearHospital() {
+      HospitalSession.clear();
+      renderHospitals();
+      updateSelectedBar();
+      document.getElementById('bannerSub').textContent = "Here's your health activity summary";
+    }
+
+    function updateSelectedBar() {
+      const h = HospitalSession.get();
+      const bar = document.getElementById('selectedBar');
+      if (h) {
+        document.getElementById('selectedBarText').textContent = `Booking at: ${h.name}, ${h.city}`;
+        bar.classList.add('visible');
+      } else {
+        bar.classList.remove('visible');
+      }
+    }
+
+    // ── Stats ──
     const appts = DB.getAppointments().filter(a => a.patientId === session.id);
-    function animCount(el, target) { let c = 0; const step = Math.max(1, Math.ceil(target / 20)); const iv = setInterval(() => { c = Math.min(c + step, target); el.textContent = c; if (c >= target) clearInterval(iv); }, 50); }
     setTimeout(() => {
       animCount(document.getElementById('statTotal'), appts.length);
       animCount(document.getElementById('statPending'), appts.filter(a => a.status === 'Pending').length);
       animCount(document.getElementById('statConfirmed'), appts.filter(a => a.status === 'Confirmed').length);
       animCount(document.getElementById('statCompleted'), appts.filter(a => a.status === 'Completed').length);
+      renderHospitals();
+      updateSelectedBar();
+      // Restore banner subtitle if hospital selected
+      const h = HospitalSession.get();
+      if (h) document.getElementById('bannerSub').textContent = `Booking at ${h.name}`;
     }, 1200);
+
+    // Alert box for dashboard
+    if (!document.getElementById('alert-box-dash')) {
+      const el = document.createElement('div'); el.id = 'alert-box-dash';
+      document.querySelector('.page-wrap').insertBefore(el, document.querySelector('.page-wrap').firstChild);
+    }
+
+    // ── Recent appointments ──
     const recent = appts.slice(-5).reverse();
     if (recent.length) {
       document.getElementById('recentTable').innerHTML = recent.map((a, i) => {
@@ -659,6 +1006,102 @@
         return `<tr style="animation:slideIn .35s ${i * .05}s ease both;"><td><strong>${doc ? doc.name : '—'}</strong></td><td><span class="text-muted">${doc ? doc.speciality : '—'}</span></td><td>${formatDate(a.date)}</td><td><span style="font-family:var(--mono);font-weight:700;color:var(--primary);">#${a.token}</span></td><td>${statusBadge(a.status)}</td></tr>`;
       }).join('');
     }
+
+
+    // ── Embedded Token Display Board ──
+    function tdInitBoard() {
+      const allAppts = DB.getAppointments();
+      const myActiveAppt = allAppts.find(a =>
+        a.patientId === session.id && (a.status === 'Pending' || a.status === 'Confirmed')
+      );
+
+      let bookedHospitalId = null;
+      if (myActiveAppt && myActiveAppt.hospitalId) {
+        bookedHospitalId = myActiveAppt.hospitalId;
+      } else {
+        const hs = HospitalSession.get();
+        if (hs) bookedHospitalId = hs.id;
+      }
+
+      const allDoctors = DB.getDoctors().filter(d => d.available);
+      const doctors = bookedHospitalId
+        ? allDoctors.filter(d => d.hospitalId === bookedHospitalId)
+        : allDoctors;
+
+      const select = document.getElementById('tdDoctorSelect');
+      if (!doctors.length) {
+        select.innerHTML = '<option value="">No doctors available</option>';
+        return;
+      }
+      select.innerHTML = doctors.map(d =>
+        `<option value="${d.id}">${d.name} (${d.speciality})</option>`
+      ).join('');
+
+      if (myActiveAppt) {
+        const myDoc = doctors.find(d => d.id === myActiveAppt.doctorId);
+        if (myDoc) select.value = myDoc.id;
+      }
+
+      tdUpdateBoard();
+    }
+
+    function tdUpdateBoard() {
+      const doctorId = document.getElementById('tdDoctorSelect').value;
+      if (!doctorId) return;
+
+      const appointments = DB.getAppointments().filter(a => a.doctorId === doctorId);
+
+      // Now serving
+      const serving = appointments.find(a => a.status === 'Confirmed');
+      if (serving) {
+        const p = DB.patientById(serving.patientId);
+        document.getElementById('tdServingToken').textContent = `#${serving.token}`;
+        document.getElementById('tdServingName').textContent = p ? p.name : 'Unknown';
+        document.getElementById('tdServingTime').textContent = `Called at ${serving.time}`;
+      } else {
+        document.getElementById('tdServingToken').textContent = '#—';
+        document.getElementById('tdServingName').textContent = 'No patient currently';
+        document.getElementById('tdServingTime').textContent = '';
+      }
+
+      // Previous token
+      const completed = appointments.filter(a => a.status === 'Completed').sort((a, b) => b.token - a.token);
+      if (completed.length > 0) {
+        const p = DB.patientById(completed[0].patientId);
+        document.getElementById('tdPrevToken').textContent = `#${completed[0].token}`;
+        document.getElementById('tdPrevName').textContent = p ? p.name : 'Recently Served';
+      } else {
+        document.getElementById('tdPrevToken').textContent = '#—';
+        document.getElementById('tdPrevName').textContent = 'Recently Served';
+      }
+
+      // Next in queue
+      const pending = appointments.filter(a => a.status === 'Pending').sort((a, b) => a.token - b.token);
+      const queueEl = document.getElementById('tdNextQueue');
+      if (pending.length > 0) {
+        queueEl.innerHTML = pending.slice(0, 4).map(a => {
+          const p = DB.patientById(a.patientId);
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface-2);border-radius:10px;margin-bottom:7px;font-weight:500;font-size:.82rem;">
+            <span style="color:var(--primary);font-weight:700;font-family:'JetBrains Mono',monospace;">#${a.token}</span>
+            <span>${p ? p.name : 'Pending'}</span>
+            <span style="color:var(--text-soft);font-size:.75rem;">${a.time}</span>
+          </div>`;
+        }).join('');
+      } else {
+        queueEl.innerHTML = '<div style="text-align:center;color:var(--text-soft);padding:14px;font-size:.85rem;">Queue is empty</div>';
+      }
+
+      // Stats
+      document.getElementById('tdTotalWaiting').textContent = pending.length;
+      document.getElementById('tdTotalServed').textContent = completed.length;
+      document.getElementById('tdAvgWait').textContent = pending.length > 0 ? (pending.length * 15) + ' mins' : '— mins';
+    }
+
+    // Init board after stats load
+    setTimeout(() => { tdInitBoard(); }, 1300);
+    setInterval(tdUpdateBoard, 5000);
+
+
   </script>
 </body>
 

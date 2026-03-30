@@ -588,7 +588,13 @@
     const stb = document.getElementById('scrollTop');
     window.addEventListener('scroll', () => stb.classList.toggle('visible', window.scrollY > 300));
 
-    Auth.requireRole('admin', 'admin_login.html');
+    const session = Auth.requireRole('admin', 'admin_login.html');
+    const hId = session.hospitalId;
+    const hName = session.hospitalName || 'Clinic';
+
+    // Update UI branding
+    const pageHeader = document.querySelector('.page-header h1');
+    if (pageHeader) pageHeader.textContent = `Manage Doctors – ${hName}`;
 
     const docPhotos = [
       'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=600&q=80',
@@ -599,12 +605,15 @@
     ];
 
     function animCount(el, target) {
+      if (!el) return;
       let c = 0; const step = Math.max(1, Math.ceil(target / 20));
       const iv = setInterval(() => { c = Math.min(c + step, target); el.textContent = c; if (c >= target) clearInterval(iv); }, 50);
     }
 
     function renderDoctors() {
-      const doctors = DB.getDoctors(), appts = DB.getAppointments();
+      const allDoctors = DB.getDoctors(), allAppts = DB.getAppointments();
+      const doctors = allDoctors.filter(d => d.hospitalId === hId);
+      
       animCount(document.getElementById('totalDocs'), doctors.length);
       animCount(document.getElementById('availDocs'), doctors.filter(d => d.available).length);
       animCount(document.getElementById('unavailDocs'), doctors.filter(d => !d.available).length);
@@ -615,7 +624,7 @@
         return;
       }
       grid.innerHTML = doctors.map((d, i) => {
-        const count = appts.filter(a => a.doctorId === d.id).length;
+        const count = allAppts.filter(a => a.doctorId === d.id).length;
         return `
       <div class="doc-card" style="animation-delay:${i * .07}s;">
         <div class="doc-card-top">
@@ -672,15 +681,20 @@
       const spec = document.getElementById('docSpec').value.trim();
       const phone = document.getElementById('docPhone').value.trim();
       if (!name || !email || !pass || !spec || !phone) return showAlert('modal-alert', 'Please fill in all fields.');
-      const doctors = DB.getDoctors();
-      if (doctors.find(d => d.email === email)) return showAlert('modal-alert', 'A doctor with this email already exists.');
-      doctors.push({ id: DB.nextId('D', doctors), name, email, password: pass, speciality: spec, phone, available: true });
-      DB.saveDoctors(doctors);
+      
+      const allDoctors = DB.getDoctors();
+      if (allDoctors.find(d => d.email === email)) return showAlert('modal-alert', 'A doctor with this email already exists.');
+      
+      allDoctors.push({ 
+        id: DB.nextId('D', allDoctors), 
+        name, email, password: pass, speciality: spec, phone, available: true,
+        hospitalId: hId 
+      });
+      DB.saveDoctors(allDoctors);
       closeModal();
       showAlert('alert-box', `${name} added successfully!`, 'success');
       renderDoctors();
     });
-
     renderDoctors();
   </script>
 </body>

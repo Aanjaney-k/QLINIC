@@ -493,10 +493,20 @@
     const stb = document.getElementById('scrollTop');
     window.addEventListener('scroll', () => stb.classList.toggle('visible', window.scrollY > 300));
 
-    Auth.requireRole('admin', 'admin_login.html');
-    const allPatients = DB.getPatients(), allAppts = DB.getAppointments();
+    const session = Auth.requireRole('admin', 'admin_login.html');
+    const hId = session.hospitalId;
+    const hName = session.hospitalName || 'Clinic';
+
+    // Update UI branding
+    const pageHeader = document.querySelector('.page-header h1');
+    if (pageHeader) pageHeader.textContent = `Patients – ${hName}`;
+
+    const allAppts = DB.getAppointments().filter(a => a.hospitalId === hId);
+    const hospitalPatientIds = new Set(allAppts.map(a => a.patientId));
+    const allPatients = DB.getPatients().filter(p => hospitalPatientIds.has(p.id));
 
     function animCount(el, target) {
+      if (!el) return;
       let c = 0; const step = Math.max(1, Math.ceil(target / 20));
       const iv = setInterval(() => { c = Math.min(c + step, target); el.textContent = c; if (c >= target) clearInterval(iv); }, 50);
     }
@@ -505,7 +515,7 @@
       if (!p.dob) return false;
       const d = new Date(p.dob); return d.getMonth() === new Date().getMonth() && d.getFullYear() === new Date().getFullYear();
     }).length;
-    const withAppts = allPatients.filter(p => allAppts.some(a => a.patientId === p.id)).length;
+    const withAppts = allPatients.length; // In this filtered view, they all have/had appts
 
     setTimeout(() => {
       animCount(document.getElementById('totalCount'), allPatients.length);

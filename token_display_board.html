@@ -421,6 +421,7 @@
     <nav class="topbar-nav" id="topbarNav">
       <a href="patient_dashboard.html">Dashboard</a>
       <a href="token_display_board.html" class="active">Token Board</a>
+      <a href="patient_token_view.html">Token View</a>
       <a href="patient_view_doctors.html">Doctors</a>
       <a href="patient_book_appointment.html">Book</a>
       <a href="patient_my_appointments.html">Appointments</a>
@@ -434,11 +435,23 @@
       <div>
         <h1 style="font-family:'Syne',sans-serif; font-weight:800; font-size: 2.2rem; margin:0;">Token Display Board
         </h1>
-        <p class="text-muted" style="margin-top: 5px;">Live queue monitoring system</p>
+        <p class="text-muted" style="margin-top: 5px;">Live queue monitoring — <span id="hospNameDisplay"
+            style="font-weight:600;color:var(--primary);">Loading...</span></p>
       </div>
       <div class="live-indicator">
         <span class="live-dot"></span>
         <span id="currentTime">Loading...</span>
+      </div>
+    </div>
+
+    <!-- No booking warning -->
+    <div id="noBookingWarn"
+      style="display:none; background:#fff7ed; border:1.5px solid #fed7aa; border-radius:14px; padding:20px 24px; margin-bottom:28px; display:none; align-items:center; gap:14px;">
+      <span style="font-size:1.4rem;">⚠️</span>
+      <div>
+        <div style="font-weight:700; color:#92400e; margin-bottom:2px;">No active booking found</div>
+        <div style="font-size:.85rem; color:#b45309;">You don't have any pending or confirmed appointments. Showing all
+          hospitals.</div>
       </div>
     </div>
 
@@ -518,9 +531,52 @@
     }
 
     function init() {
-      const doctors = DB.getDoctors().filter(d => d.available);
+      const session = Auth.requireRole('patient', 'patient_login.html');
+
+      // Derive the patient's booked hospital from their active appointments
+      const allAppts = DB.getAppointments();
+      const myActiveAppt = allAppts.find(a =>
+        a.patientId === session.id && (a.status === 'Pending' || a.status === 'Confirmed')
+      );
+
+      let bookedHospitalId = null;
+      if (myActiveAppt && myActiveAppt.hospitalId) {
+        bookedHospitalId = myActiveAppt.hospitalId;
+      } else {
+        // Fallback: use HospitalSession if set
+        const hs = HospitalSession.get();
+        if (hs) bookedHospitalId = hs.id;
+      }
+
+      // Show hospital name in subtitle
+      const hosp = bookedHospitalId ? SuperDB.hospitalById(bookedHospitalId) : null;
+      const hospNameEl = document.getElementById('hospNameDisplay');
+      if (hosp) {
+        hospNameEl.textContent = hosp.name;
+      } else {
+        hospNameEl.textContent = 'All Hospitals';
+        document.getElementById('noBookingWarn').style.display = 'flex';
+      }
+
+      // Filter doctors to booked hospital only
+      const allDoctors = DB.getDoctors().filter(d => d.available);
+      const doctors = bookedHospitalId
+        ? allDoctors.filter(d => d.hospitalId === bookedHospitalId)
+        : allDoctors;
+
       const select = document.getElementById('doctorSelect');
+      if (!doctors.length) {
+        select.innerHTML = '<option value="">No doctors available</option>';
+        return;
+      }
       select.innerHTML = doctors.map(d => `<option value="${d.id}">${d.name} (${d.speciality})</option>`).join('');
+
+      // Pre-select the doctor the patient actually booked with
+      if (myActiveAppt) {
+        const myDoc = doctors.find(d => d.id === myActiveAppt.doctorId);
+        if (myDoc) select.value = myDoc.id;
+      }
+
       updateBoard();
     }
 
