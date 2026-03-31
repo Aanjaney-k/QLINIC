@@ -307,12 +307,12 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/app.js"></script>
   <script>
     window.addEventListener('load', () => setTimeout(() => document.getElementById('loader').classList.add('gone'), 1100));
 
-    document.getElementById('regForm').addEventListener('submit', function (e) {
+    document.getElementById('regForm').addEventListener('submit', async function (e) {
       e.preventDefault();
       const name = document.getElementById('name').value.trim();
       const email = document.getElementById('email').value.trim().toLowerCase();
@@ -324,12 +324,13 @@
       if (!name || !email || !phone || !dob || !gender || !password) return showAlert('alert-box', 'Please fill in all fields.');
       if (password.length < 6) return showAlert('alert-box', 'Password must be at least 6 characters.');
       if (password !== confirm) return showAlert('alert-box', 'Passwords do not match.');
-      const patients = DB.getPatients();
-      if (patients.find(p => p.email === email)) return showAlert('alert-box', 'An account with this email already exists.');
-      patients.push({ id: DB.nextId('P', patients), name, email, phone, dob, gender, password });
-      DB.savePatients(patients);
-      showAlert('alert-box', 'Account created! Redirecting to login…', 'success');
-      setTimeout(() => location.href = 'patient_login.html', 1800);
+      try {
+        await Auth.registerPatient({ name, email, phone, dob, gender, password });
+        showAlert('alert-box', 'Account created! Redirecting to login…', 'success');
+        setTimeout(() => location.href = 'patient_login.html', 1800);
+      } catch (err) {
+        showAlert('alert-box', err.message || 'Registration failed. Please try again.');
+      }
     });
   </script>
 </body>

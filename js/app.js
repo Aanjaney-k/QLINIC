@@ -6,7 +6,7 @@
    ============================================================ */
 
 const SUPABASE_URL = 'https://bxasvcackgszdmhurrje.supabase.co';   // ← change
-const SUPABASE_ANON = 'sb_publishable_F1oYo-mLyKik6KI5VehJfA_qlOGmetz';                       // ← change
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4YXN2Y2Fja2dzemRtaHVycmplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NDMxMDgsImV4cCI6MjA5MDUxOTEwOH0.RP04Cc7EbjJMqtjY1NDdK-ghLyKpyle_qMMKFkFjuJc';                       // ← change
 
 /* ── Supabase client (loaded from CDN script tag in HTML) ── */
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
