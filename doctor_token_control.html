@@ -691,14 +691,15 @@
     }
 
     const session = Auth.requireRole('doctor', 'doctor_login.html');
-    function getQueue() { return DB.getAppointments().filter(a => a.doctorId === session.id && (a.status === 'Pending' || a.status === 'Confirmed')).sort((a, b) => a.token - b.token); }
 
-    function render() {
-      const queue = getQueue();
+    async function render() {
+      const allAppts = await DB.getAppointmentsByDoctor(session.id);
+      const patients = await DB.getPatients();
+      const queue = allAppts.filter(a => a.status === 'Pending' || a.status === 'Confirmed').sort((a, b) => a.token - b.token);
       const serving = queue.find(a => a.status === 'Confirmed') || null;
       const waiting = queue.filter(a => a.status === 'Pending');
       if (serving) {
-        const p = DB.patientById(serving.patientId);
+        const p = patients.find(p => p.id === serving.patient_id);
         document.getElementById('currentToken').textContent = `#${serving.token}`;
         document.getElementById('currentPatientName').textContent = p ? p.name : '—';
       } else {
@@ -710,7 +711,7 @@
         document.getElementById('queueList').innerHTML = '<li><div class="empty-queue"><div class="eq-icon">🎉</div><div>Queue is empty</div></div></li>';
       } else {
         document.getElementById('queueList').innerHTML = waiting.map((a, i) => {
-          const p = DB.patientById(a.patientId);
+          const p = patients.find(p => p.id === a.patient_id);
           return `<li class="queue-item" style="animation-delay:${i * .06}s;">
           <div class="q-token">#${a.token}</div>
           <div class="q-name">${p ? p.name : '—'}</div>
@@ -720,14 +721,15 @@
       }
     }
 
-    function callNext() {
-      const pending = getQueue().filter(a => a.status === 'Pending');
+    async function callNext() {
+      const allAppts = await DB.getAppointmentsByDoctor(session.id);
+      const pending = allAppts.filter(a => a.status === 'Pending').sort((a, b) => a.token - b.token);
       if (!pending.length) { alert('No more patients in the queue!'); return; }
-      const all = DB.getAppointments();
-      all.forEach((a, i) => { if (a.doctorId === session.id && a.status === 'Confirmed') all[i].status = 'Completed'; });
-      const idx = all.findIndex(a => a.id === pending[0].id);
-      if (idx > -1) all[idx].status = 'Confirmed';
-      DB.saveAppointments(all);
+      // Complete currently confirmed
+      const confirmed = allAppts.find(a => a.status === 'Confirmed');
+      if (confirmed) await DB.updateAppointment(confirmed.id, { status: 'Completed' });
+      // Confirm next pending
+      await DB.updateAppointment(pending[0].id, { status: 'Confirmed' });
       render();
     }
     render();

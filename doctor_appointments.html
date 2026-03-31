@@ -537,14 +537,15 @@
     const session = Auth.requireRole('doctor', 'doctor_login.html');
     let currentFilter = 'all', currentApptId = null;
 
-    function renderTable() {
-      let appts = DB.getAppointments().filter(a => a.doctorId === session.id);
+    async function renderTable() {
+      let appts = await DB.getAppointmentsByDoctor(session.id);
+      const patients = await DB.getPatients();
       if (currentFilter !== 'all') appts = appts.filter(a => a.status === currentFilter);
       appts = appts.reverse();
       const tbody = document.getElementById('apptTable');
       if (!appts.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted" style="padding:32px;">No appointments found.</td></tr>'; return; }
       tbody.innerHTML = appts.map((a, i) => {
-        const p = DB.patientById(a.patientId);
+        const p = patients.find(p => p.id === a.patient_id);
         const hasPrx = !!a.prescription;
         const canWrite = a.status === 'Confirmed' || a.status === 'Completed';
         const actions = `
@@ -568,22 +569,24 @@
       document.querySelectorAll('[id^="btn-"]').forEach(b => { b.classList.toggle('btn-primary', b.id === `btn-${f}`); b.classList.toggle('btn-outline', b.id !== `btn-${f}`); });
       renderTable();
     }
-    function updateStatus(id, s) { const all = DB.getAppointments(); const idx = all.findIndex(a => a.id === id); if (idx > -1) { all[idx].status = s; DB.saveAppointments(all); renderTable(); } }
-    function openPrescription(id, name, token) {
+    async function updateStatus(id, s) {
+      await DB.updateAppointment(id, { status: s });
+      renderTable();
+    }
+    async function openPrescription(id, name, token) {
       currentApptId = id;
       document.getElementById('prxPatientName').textContent = name;
       document.getElementById('prxToken').textContent = `#${token}`;
-      const appt = DB.getAppointments().find(a => a.id === id);
+      const appts = await DB.getAppointments();
+      const appt = appts.find(a => a.id === id);
       document.getElementById('prxText').value = appt ? appt.prescription : '';
       document.getElementById('prxModal').classList.add('open');
     }
     function closeModal() { document.getElementById('prxModal').classList.remove('open'); currentApptId = null; }
-    function savePrescription() {
+    async function savePrescription() {
       const text = document.getElementById('prxText').value.trim();
       if (!text) return showAlert('modal-alert', 'Please enter prescription details.');
-      const all = DB.getAppointments();
-      const idx = all.findIndex(a => a.id === currentApptId);
-      if (idx > -1) { all[idx].prescription = text; if (all[idx].status !== 'Completed') all[idx].status = 'Completed'; DB.saveAppointments(all); }
+      await DB.savePrescription(currentApptId, text);
       closeModal(); renderTable();
     }
     renderTable();

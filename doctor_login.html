@@ -365,10 +365,25 @@
     }
 
     @media (max-width: 900px) {
-      .auth-page { display: block; overflow: visible; }
-      .auth-visual { display: none; }
-      .auth-form-side { min-height: 100vh; padding: 24px 20px; overflow: visible; }
-      .auth-card { padding: 0; max-width: 100%; }
+      .auth-page {
+        display: block;
+        overflow: visible;
+      }
+
+      .auth-visual {
+        display: none;
+      }
+
+      .auth-form-side {
+        min-height: 100vh;
+        padding: 24px 20px;
+        overflow: visible;
+      }
+
+      .auth-card {
+        padding: 0;
+        max-width: 100%;
+      }
     }
   </style>
 </head>
@@ -433,15 +448,17 @@
   <script>
     window.addEventListener('load', () => setTimeout(() => document.getElementById('loader').classList.add('gone'), 1100));
     if (Auth.session && Auth.session.role === 'doctor') location.href = 'doctor_dashboard.html';
-    document.getElementById('loginForm').addEventListener('submit', function (e) {
+    document.getElementById('loginForm').addEventListener('submit', async function (e) {
       e.preventDefault();
       const email = document.getElementById('email').value.trim().toLowerCase();
       const password = document.getElementById('password').value;
       if (!email || !password) return showAlert('alert-box', 'Please enter email and password.');
-      const doctor = DB.getDoctors().find(d => d.email === email && d.password === password);
-      if (!doctor) return showAlert('alert-box', 'Incorrect email or password.');
-      Auth.session = { id: doctor.id, name: doctor.name, role: 'doctor' };
-      location.href = 'doctor_dashboard.html';
+      try {
+        await Auth.loginDoctor(email, password);
+        location.href = 'doctor_dashboard.html';
+      } catch (err) {
+        showAlert('alert-box', err.message || 'Incorrect email or password.');
+      }
     });
   </script>
 </body>

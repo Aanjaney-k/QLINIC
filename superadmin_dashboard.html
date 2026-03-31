@@ -916,49 +916,46 @@
         }
 
         // ── Render hospitals ──
-        function renderHospitals() {
-            const hospitals = SuperDB.getHospitals();
-            const admins = SuperDB.getAdmins();
+        async function renderHospitals() {
+            const hospitals = await SuperDB.getHospitals();
+            const admins = await SuperDB.getAdmins();
             const q = (document.getElementById('searchInput').value || '').toLowerCase();
             const grid = document.getElementById('hospitalsGrid');
-
             const filtered = hospitals.filter(h => h.name.toLowerCase().includes(q) || h.city.toLowerCase().includes(q));
-
             if (!filtered.length) {
-                grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="es-icon">🏥</div><div class="es-title">No hospitals found</div><div class="es-sub">${q ? 'Try a different search.' : 'Click "+ Add Hospital" to get started.'
-                    }</div></div>`;
+                grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="es-icon">🏥</div><div class="es-title">No hospitals found</div><div class="es-sub">${q ? 'Try a different search.' : 'Click &quot;+ Add Hospital&quot; to get started.'}</div></div>`;
                 return;
             }
-
             grid.innerHTML = filtered.map((h, i) => {
-                const admin = admins.find(a => a.hospitalId === h.id);
+                const admin = admins.find(a => a.hospital_id === h.id);
                 const isActive = h.status === 'active';
-
-                return ` <div class="hospital-card" style="animation-delay:${i * .06}s" > <div class="hc-header" > <div class="hc-avatar" >🏥</div> <div> <div class="hc-name" >${h.name
-                    }</div> <div class="hc-city" >📍 ${h.city
-                    }</div> </div> <span class="badge ${isActive ? 'badge-green' : 'badge-gray'}" style="margin-left:auto;" >${isActive ? 'Active' : 'Inactive'
-                    }</span> </div> <div class="hc-admin-row" > <div class="hc-admin-info" > <div class="hc-admin-dot ${isActive ? '' : 'inactive'}" ></div> <div> <div class="hc-admin-name" >${admin ? admin.name : 'No admin assigned'
-                    }</div> <div class="hc-admin-sub" >${admin ? '@' + admin.username : '—'
-                    }</div> </div> </div> <div class="hc-actions" > <button class="btn btn-outline btn-sm"
-    onclick="event.stopPropagation(); openEditModal('${h.id}')">
-    Edit
-</button>
-
-<button class="btn btn-sm"
-    style="background:#fee2e2;color:#dc2626;border-color:#fca5a5;"
-    onclick="event.stopPropagation(); openDeleteModal('${h.id}')">
-    Delete
-</button> </div> </div> </div>`;
+                return `<div class="hospital-card" style="animation-delay:${i * .06}s">
+                  <div class="hc-header">
+                    <div class="hc-avatar">🏥</div>
+                    <div><div class="hc-name">${h.name}</div><div class="hc-city">📍 ${h.city}</div></div>
+                    <span class="badge ${isActive ? 'badge-green' : 'badge-gray'}" style="margin-left:auto;">${isActive ? 'Active' : 'Inactive'}</span>
+                  </div>
+                  <div class="hc-admin-row">
+                    <div class="hc-admin-info">
+                      <div class="hc-admin-dot ${isActive ? '' : 'inactive'}"></div>
+                      <div><div class="hc-admin-name">${admin ? admin.name : 'No admin assigned'}</div>
+                      <div class="hc-admin-sub">${admin ? '@' + admin.username : '—'}</div></div>
+                    </div>
+                    <div class="hc-actions">
+                      <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openEditModal('${h.id}')">Edit</button>
+                      <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border-color:#fca5a5;" onclick="event.stopPropagation();openDeleteModal('${h.id}')">Delete</button>
+                    </div>
+                  </div>
+                </div>`;
             }).join('');
         }
 
         // ── Load stats ──
-        function loadStats() {
-            const hospitals = SuperDB.getHospitals();
-            const admins = SuperDB.getAdmins();
+        async function loadStats() {
+            const hospitals = await SuperDB.getHospitals();
+            const admins = await SuperDB.getAdmins();
             const active = hospitals.filter(h => h.status === 'active').length;
             const inactive = hospitals.length - active;
-
             animCount(document.getElementById('statHospitals'), hospitals.length);
             animCount(document.getElementById('statAdmins'), admins.length);
             animCount(document.getElementById('statActive'), active);
@@ -986,59 +983,38 @@
             document.getElementById('modal-alert').innerHTML = '';
         }
 
-        document.getElementById('addForm').addEventListener('submit', function (e) {
+        document.getElementById('addForm').addEventListener('submit', async function (e) {
             e.preventDefault();
             const name = document.getElementById('hName').value.trim();
             const city = document.getElementById('hCity').value.trim();
             const adminUser = document.getElementById('hAdminUser').value.trim();
             const adminPass = document.getElementById('hAdminPass').value;
             const adminName = document.getElementById('hAdminName').value.trim();
-
             if (!name || !city || !adminUser || !adminPass || !adminName) {
                 showAlert('modal-alert', 'Please fill in all fields.'); return;
             }
-
-            // Check username uniqueness
-            const existing = SuperDB.getAdmins().find(a => a.username === adminUser);
-
-            if (existing) {
-                showAlert('modal-alert', 'Admin username already exists. Choose another.'); return;
+            const existing = await SuperDB.adminByUsername(adminUser);
+            if (existing) { showAlert('modal-alert', 'Admin username already exists. Choose another.'); return; }
+            try {
+                await SuperDB.addHospital({ name, city, adminName, adminUsername: adminUser, adminPassword: adminPass });
+                closeAddModal();
+                loadStats();
+                renderHospitals();
+                showAlert('alert-box', `Hospital "${name}" and admin "@${adminUser}" created successfully!`, 'success');
+            } catch (err) {
+                showAlert('modal-alert', err.message || 'Failed to create hospital.');
             }
-
-            const hospitals = SuperDB.getHospitals();
-            const admins = SuperDB.getAdmins();
-            const hId = 'H' + Date.now();
-            const aId = 'A' + Date.now();
-
-            hospitals.push({
-                id: hId, name, city, status: 'active', createdAt: new Date().toISOString()
-            });
-
-            admins.push({
-                id: aId, hospitalId: hId, hospitalName: name, username: adminUser, password: adminPass, name: adminName, createdAt: new Date().toISOString()
-            });
-
-            SuperDB.saveHospitals(hospitals);
-            SuperDB.saveAdmins(admins);
-
-            closeAddModal();
-            loadStats();
-            renderHospitals();
-            showAlert('alert-box', `Hospital "${name}" and admin "@${adminUser}" created successfully !`, 'success');
         });
 
         // ── Edit modal ──
-        function openEditModal(hId) {
-            closeAllModals(); // prevents multiple modals
-
-            const h = SuperDB.getHospitals().find(h => h.id === hId);
+        async function openEditModal(hId) {
+            closeAllModals();
+            const h = await SuperDB.hospitalById(hId);
             if (!h) return;
-
             document.getElementById('editHospitalId').value = hId;
             document.getElementById('editHName').value = h.name;
             document.getElementById('editHCity').value = h.city;
             document.getElementById('editHStatus').value = h.status;
-
             document.getElementById('editModal').classList.add('open');
         }
 
@@ -1046,48 +1022,31 @@
             document.getElementById('editModal').classList.remove('open');
         }
 
-        document.getElementById('editForm').addEventListener('submit', function (e) {
+        document.getElementById('editForm').addEventListener('submit', async function (e) {
             e.preventDefault();
             const hId = document.getElementById('editHospitalId').value;
             const name = document.getElementById('editHName').value.trim();
             const city = document.getElementById('editHCity').value.trim();
             const status = document.getElementById('editHStatus').value;
-
-            if (!name || !city) {
-                showAlert('edit-alert', 'Please fill in all fields.'); return;
+            if (!name || !city) { showAlert('edit-alert', 'Please fill in all fields.'); return; }
+            try {
+                await SuperDB.updateHospital(hId, { name, city, status });
+                closeEditModal();
+                loadStats();
+                renderHospitals();
+            } catch (err) {
+                showAlert('edit-alert', err.message || 'Update failed.');
             }
-
-            const hospitals = SuperDB.getHospitals().map(h => h.id === hId ? {
-                ...h, name, city, status
-            }
-
-                : h);
-
-            // Update hospital name in admins too
-            const admins = SuperDB.getAdmins().map(a => a.hospitalId === hId ? {
-                ...a, hospitalName: name
-            }
-
-                : a);
-            SuperDB.saveHospitals(hospitals);
-            SuperDB.saveAdmins(admins);
-
-            closeEditModal();
-            loadStats();
-            renderHospitals();
         });
 
         // ── Delete ──
-        window.openDeleteModal = function (hId) {
-            const h = SuperDB.getHospitals().find(h => h.id === hId);
+        window.openDeleteModal = async function (hId) {
+            closeAllModals();
+            const h = await SuperDB.hospitalById(hId);
             if (!h) return;
-
-            closeAllModals(); // ensures only one modal opens
-
             document.getElementById('deleteHospitalId').value = hId;
             document.getElementById('deleteMsg').textContent =
                 `Are you sure you want to delete "${h.name}" and its administrator? This cannot be undone.`;
-
             document.getElementById('deleteModal').classList.add('open');
         };
 
@@ -1095,21 +1054,19 @@
             document.getElementById('deleteModal').classList.remove('open');
         };
 
-        window.confirmDelete = function () {
+        window.confirmDelete = async function () {
             const hId = document.getElementById('deleteHospitalId').value;
-            const h = SuperDB.getHospitals().find(h => h.id === hId);
+            const h = await SuperDB.hospitalById(hId);
             if (!h) return;
-
-            const newHospitals = SuperDB.getHospitals().filter(h => h.id !== hId);
-            const newAdmins = SuperDB.getAdmins().filter(a => a.hospitalId !== hId);
-
-            SuperDB.saveHospitals(newHospitals);
-            SuperDB.saveAdmins(newAdmins);
-
-            closeDeleteModal();
-            loadStats();
-            renderHospitals();
-            showAlert('alert-box', `Hospital "${h.name}" deleted successfully.`, 'success');
+            try {
+                await SuperDB.deleteHospital(hId);
+                closeDeleteModal();
+                loadStats();
+                renderHospitals();
+                showAlert('alert-box', `Hospital "${h.name}" deleted successfully.`, 'success');
+            } catch (err) {
+                showAlert('alert-box', err.message || 'Delete failed.');
+            }
         };
 
         // ── Close modals on backdrop click ──
@@ -1126,11 +1083,9 @@
         });
 
         // ── Init ──
-        setTimeout(() => {
-            loadStats(); renderHospitals();
-        }
-
-            , 1200);
+        setTimeout(async () => {
+            await loadStats(); await renderHospitals();
+        }, 1200);
     </script>
 </body>
 

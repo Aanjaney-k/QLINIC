@@ -480,14 +480,15 @@
     }
     const session = Auth.requireRole('patient', 'patient_login.html');
     let currentFilter = 'all';
-    function renderTable() {
-      let appts = DB.getAppointments().filter(a => a.patientId === session.id);
+    async function renderTable() {
+      let appts = await DB.getAppointmentsByPatient(session.id);
+      const doctors = await DB.getDoctors();
       if (currentFilter !== 'all') appts = appts.filter(a => a.status === currentFilter);
       appts = appts.reverse();
       const tbody = document.getElementById('apptTable');
       if (!appts.length) { tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted" style="padding:32px;">No appointments found. <a href="patient_book_appointment.html">Book one →</a></td></tr>'; return; }
       tbody.innerHTML = appts.map((a, i) => {
-        const doc = DB.doctorById(a.doctorId);
+        const doc = doctors.find(d => d.id === a.doctor_id);
         const prx = a.prescription ? `<a href="patient_prescription.html?apptId=${a.id}" class="btn btn-outline btn-sm">📄 View Rx</a>` : '<span class="text-muted">—</span>';
         const cancel = (a.status === 'Pending' || a.status === 'Confirmed') ? `<button class="btn btn-danger btn-sm" onclick="cancelAppt('${a.id}')">Cancel</button>` : '';
         return `<tr style="animation:slideIn .35s ${i * .04}s ease both;">
@@ -504,11 +505,11 @@
       document.querySelectorAll('[id^="btn-"]').forEach(b => { b.classList.toggle('btn-primary', b.id === `btn-${f}`); b.classList.toggle('btn-outline', b.id !== `btn-${f}`); });
       renderTable();
     }
-    function cancelAppt(id) {
+    async function cancelAppt(id) {
       if (!confirm('Cancel this appointment?')) return;
-      const all = DB.getAppointments(); const idx = all.findIndex(a => a.id === id);
-      if (idx > -1) { all[idx].status = 'Cancelled'; DB.saveAppointments(all); }
-      showAlert('alert-box', 'Appointment cancelled.', 'success'); renderTable();
+      await DB.cancelAppointment(id);
+      showAlert('alert-box', 'Appointment cancelled.', 'success');
+      renderTable();
     }
     renderTable();
   </script>

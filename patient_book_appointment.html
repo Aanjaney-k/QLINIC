@@ -732,13 +732,11 @@
     }
 
     // ── State ──
-    let selectedHosp = HospitalSession.get(); // pre-selected from dashboard if any
-
-    // ── Render hospital cards ──
-    const hospitals = SuperDB.getHospitals().filter(h => h.status === 'active');
+    let selectedHosp = HospitalSession.get();
     const hospGrid = document.getElementById('hospGrid');
 
-    function renderHospCards() {
+    async function renderHospCards() {
+      const hospitals = (await SuperDB.getHospitals()).filter(h => h.status === 'active');
       if (!hospitals.length) {
         hospGrid.innerHTML = '<div class="no-hospitals">🏥 No hospitals available at this time.</div>';
         return;
@@ -746,15 +744,13 @@
       hospGrid.innerHTML = hospitals.map((h, i) => `
         <div class="hosp-card ${selectedHosp && selectedHosp.id === h.id ? 'selected' : ''}"
              style="animation-delay:${i * .07}s"
-             onclick="selectHospCard('${h.id}','${h.name.replace(/'/g, "\'")}','${h.city.replace(/'/g, "\'")}',this)">
+             onclick="selectHospCard('${h.id}','${h.name.replace(/'/g, "\\'")}','${h.city.replace(/'/g, "\\'")}',this)">
           <div class="hc-check">✓</div>
           <div class="hc-icon">🏥</div>
           <div class="hc-name">${h.name}</div>
           <div class="hc-city">📍 ${h.city}</div>
         </div>
       `).join('');
-
-      // If already pre-selected, enable continue
       if (selectedHosp) enableContinue();
     }
 
@@ -772,21 +768,15 @@
       btn.style.pointerEvents = 'auto';
     }
 
-    function goToStep2() {
+    async function goToStep2() {
       if (!selectedHosp) return;
-
-      // Update step indicators
       document.getElementById('step1Indicator').classList.remove('active');
       document.getElementById('step1Indicator').classList.add('done');
       document.getElementById('step1Indicator').querySelector('.step-num').textContent = '✓';
       document.getElementById('stepConnector').classList.add('done');
       document.getElementById('step2Indicator').classList.add('active');
-
-      // Switch panels
       document.getElementById('step1Panel').classList.remove('active');
       document.getElementById('step2Panel').classList.add('active');
-
-      // Render selected hospital bar
       document.getElementById('hospSelectedBar').innerHTML = `
         <span class="hsb-icon">🏥</span>
         <div class="hsb-text">
@@ -795,11 +785,9 @@
         </div>
         <span class="hsb-change" onclick="goToStep1()">Change</span>
       `;
-
-      // Populate doctors for this hospital
       const docSel = document.getElementById('doctor');
       docSel.innerHTML = '<option value="">— Choose a doctor —</option>';
-      const filteredDoctors = DB.getDoctors().filter(d => d.available && d.hospitalId === selectedHosp.id);
+      const filteredDoctors = (await DB.getDoctors()).filter(d => d.available && d.hospital_id === selectedHosp.id);
       if (!filteredDoctors.length) {
         docSel.innerHTML = '<option value="">— No doctors available —</option>';
       } else {
@@ -839,32 +827,29 @@
     }
 
     // Submit
-    document.getElementById('bookForm').addEventListener('submit', function (e) {
+    document.getElementById('bookForm').addEventListener('submit', async function (e) {
       e.preventDefault();
       const doctorId = document.getElementById('doctor').value;
       const date = document.getElementById('date').value;
       const time = document.getElementById('time').value;
       if (!doctorId || !date || !time) return showAlert('alert-box', 'Please fill in all fields and select a time slot.');
-      const appointments = DB.getAppointments();
-      const dup = appointments.find(a => a.patientId === session.id && a.doctorId === doctorId && a.date === date && a.status !== 'Cancelled');
-      if (dup) return showAlert('alert-box', 'You already have an appointment with this doctor on that date.');
-      const token = DB.nextToken();
-      const appt = {
-        id: DB.nextId('A', appointments),
-        patientId: session.id, doctorId, date, time,
-        status: 'Pending', token, prescription: '',
-        hospitalId: selectedHosp ? selectedHosp.id : null
-      };
-      appointments.push(appt);
-      DB.saveAppointments(appointments);
-      sessionStorage.setItem('ql_last_appt', JSON.stringify(appt));
-      location.href = 'patient_token.html';
+      try {
+        const existing = await DB.getAppointmentsByPatient(session.id);
+        const dup = existing.find(a => a.doctor_id === doctorId && a.date === date && a.status !== 'Cancelled');
+        if (dup) return showAlert('alert-box', 'You already have an appointment with this doctor on that date.');
+        const appt = await DB.bookAppointment({
+          patientId: session.id, doctorId, date, time,
+          hospitalId: selectedHosp ? selectedHosp.id : null
+        });
+        sessionStorage.setItem('ql_last_appt', JSON.stringify(appt));
+        location.href = 'patient_token.html';
+      } catch (err) {
+        showAlert('alert-box', err.message || 'Booking failed. Please try again.');
+      }
     });
 
     // Init
     renderHospCards();
-
-    // If patient came from dashboard with a hospital already selected, go straight to step 2
     if (selectedHosp) goToStep2();
   </script>
 </body>

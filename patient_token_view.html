@@ -686,16 +686,26 @@
 
         // ── State ──
         let activeHospId = null;
-        const hospitals = SuperDB.getHospitals().filter(h => h.status === 'active');
+        let _hospitals = [];
 
-        // Build hospital tabs
+        async function init() {
+            _hospitals = (await SuperDB.getHospitals()).filter(h => h.status === 'active');
+            const myAppts = await DB.getAppointmentsByPatient(session.id);
+            const myActive = myAppts.find(a => a.status === 'Pending' || a.status === 'Confirmed');
+            if (myActive && myActive.hospital_id) {
+                activeHospId = myActive.hospital_id;
+            } else {
+                const selHosp = HospitalSession.get();
+                if (selHosp && _hospitals.length > 1) activeHospId = selHosp.id;
+            }
+            renderHospTabs();
+            await renderCards();
+        }
+
         function renderHospTabs() {
             const tabs = document.getElementById('hospTabs');
-            if (hospitals.length <= 1) {
-                tabs.style.display = 'none';
-                return;
-            }
-            const all = [{ id: '__all', name: 'All Hospitals' }, ...hospitals];
+            if (_hospitals.length <= 1) { tabs.style.display = 'none'; return; }
+            const all = [{ id: '__all', name: 'All Hospitals' }, ..._hospitals];
             tabs.innerHTML = all.map(h =>
                 `<div class="hosp-tab ${activeHospId === h.id ? 'active' : ''}"
               onclick="setHospFilter('${h.id}')">${h.name}</div>`
@@ -708,65 +718,46 @@
             renderCards();
         }
 
-        // Get initials for avatar
         function initials(name) {
             return name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
         }
 
-        // ── Main render ──
-        function renderCards() {
-            const allAppts = DB.getAppointments();
-            const myAppts = allAppts.filter(a => a.patientId === session.id);
-
-            // Only show doctors the patient has an active booking with
+        async function renderCards() {
+            const allAppts = await DB.getAppointments();
+            const patients = await DB.getPatients();
+            const allDocs = await DB.getDoctors();
+            const myAppts = allAppts.filter(a => a.patient_id === session.id);
             const myActiveAppts = myAppts.filter(a => a.status === 'Pending' || a.status === 'Confirmed');
-            const myDoctorIds = [...new Set(myActiveAppts.map(a => a.doctorId))];
-            const doctors = DB.getDoctors().filter(d => myDoctorIds.includes(d.id));
+            const myDoctorIds = [...new Set(myActiveAppts.map(a => a.doctor_id))];
+            const doctors = allDocs.filter(d => myDoctorIds.includes(d.id));
 
             const grid = document.getElementById('doctorsGrid');
             const empty = document.getElementById('emptyState');
-
-            if (!doctors.length) {
-                grid.innerHTML = '';
-                empty.style.display = 'block';
-                return;
-            }
+            if (!doctors.length) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
             empty.style.display = 'none';
 
             grid.innerHTML = doctors.map((doc, idx) => {
-                const appts = allAppts.filter(a => a.doctorId === doc.id);
-
+                const appts = allAppts.filter(a => a.doctor_id === doc.id);
                 const serving = appts.find(a => a.status === 'Confirmed');
                 const completed = appts.filter(a => a.status === 'Completed').sort((a, b) => b.token - a.token);
                 const pending = appts.filter(a => a.status === 'Pending').sort((a, b) => a.token - b.token);
-
                 const nowToken = serving ? `#${serving.token}` : '—';
                 const prevToken = completed.length ? `#${completed[0].token}` : '—';
                 const nextToken = pending.length ? `#${pending[0].token}` : '—';
-
-                // Check if patient has an appointment with this doctor
-                const myApptWithDoc = myAppts.find(a => a.doctorId === doc.id && (a.status === 'Pending' || a.status === 'Confirmed'));
+                const myApptWithDoc = myAppts.find(a => a.doctor_id === doc.id && (a.status === 'Pending' || a.status === 'Confirmed'));
                 let myPosition = null;
                 if (myApptWithDoc && myApptWithDoc.status === 'Pending') {
                     myPosition = pending.findIndex(a => a.id === myApptWithDoc.id) + 1;
                 }
-
-                // Status pill
                 let pillClass = 'pill-idle', pillText = 'Idle';
                 if (serving) { pillClass = 'pill-busy'; pillText = 'In Session'; }
                 else if (pending.length) { pillClass = 'pill-active'; pillText = 'Queue Open'; }
-
-                // Est wait for patient
                 const estWait = myPosition ? (myPosition * 15) + ' mins' : null;
-
-                // Hospital name
-                const hosp = SuperDB.hospitalById(doc.hospitalId);
+                const hosp = _hospitals.find(h => h.id === doc.hospital_id);
                 const hospName = hosp ? hosp.name : '';
-
-                // Queue items (show up to 5, highlight patient's token)
                 const queueItems = pending.slice(0, 5).map(a => {
-                    const p = DB.patientById(a.patientId);
-                    const isYou = a.patientId === session.id;
+                    const p = patients.find(p => p.id === a.patient_id);
+                    const isYou = a.patient_id === session.id;
                     return `<div class="queue-item${isYou ? ' you' : ''}" style="${isYou ? 'border-color:var(--primary);background:var(--primary-lt);' : ''}">
             <span class="qi-token">#${a.token}</span>
             <span class="qi-name">${isYou ? 'You' : (p ? p.name.split(' ')[0] + ' ' + (p.name.split(' ')[1] || '').charAt(0) + '.' : 'Patient')}</span>
@@ -774,11 +765,9 @@
             ${isYou ? '<span class="qi-you">YOU</span>' : ''}
           </div>`;
                 }).join('');
-
                 const morePending = pending.length > 5
                     ? `<div style="text-align:center;font-size:.75rem;color:var(--text-muted);padding:6px 0;">+${pending.length - 5} more in queue</div>`
                     : '';
-
                 return `
         <div class="doc-card" style="animation-delay:${idx * .07}s">
           <div class="doc-card-head">
@@ -798,55 +787,25 @@
               </div>
               ${estWait ? `<span class="ytb-pos">~${estWait}</span>` : ''}
             </div>` : ''}
-
             <div class="token-row">
-              <div class="token-box prev">
-                <div class="tb-label">Previous</div>
-                <div class="tb-num">${prevToken}</div>
-              </div>
-              <div class="token-box now">
-                <div class="tb-label">Now Serving</div>
-                <div class="tb-num">${nowToken}</div>
-              </div>
-              <div class="token-box next">
-                <div class="tb-label">Next Up</div>
-                <div class="tb-num">${nextToken}</div>
-              </div>
+              <div class="token-box prev"><div class="tb-label">Previous</div><div class="tb-num">${prevToken}</div></div>
+              <div class="token-box now"><div class="tb-label">Now Serving</div><div class="tb-num">${nowToken}</div></div>
+              <div class="token-box next"><div class="tb-label">Next Up</div><div class="tb-num">${nextToken}</div></div>
             </div>
-
-            <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:8px;">
-              Waiting Queue
-            </div>
+            <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:8px;">Waiting Queue</div>
             <div class="queue-strip">
               ${pending.length ? (queueItems + morePending) : '<div class="queue-empty">✅ No one waiting</div>'}
             </div>
           </div>
           <div class="doc-card-foot">
-            <div class="foot-stat">
-              <strong>${pending.length}</strong> waiting &nbsp;·&nbsp;
-              <strong>${completed.length}</strong> served
-            </div>
+            <div class="foot-stat"><strong>${pending.length}</strong> waiting &nbsp;·&nbsp; <strong>${completed.length}</strong> served</div>
             ${pending.length ? `<div class="foot-wait">⏱ ~${pending.length * 15} min wait</div>` : '<div class="foot-wait" style="color:var(--text-muted);">No wait</div>'}
           </div>
         </div>`;
             }).join('');
         }
 
-        // Init & auto-refresh
-        // Derive booked hospital from patient's active appointments (most reliable)
-        const myActiveAppt = DB.getAppointments().find(a =>
-            a.patientId === session.id && (a.status === 'Pending' || a.status === 'Confirmed')
-        );
-        if (myActiveAppt && myActiveAppt.hospitalId) {
-            activeHospId = myActiveAppt.hospitalId;
-        } else {
-            // Fallback: use HospitalSession if set
-            const selHosp = HospitalSession.get();
-            if (selHosp && hospitals.length > 1) activeHospId = selHosp.id;
-        }
-
-        renderHospTabs();
-        renderCards();
+        init();
         setInterval(renderCards, 5000);
     </script>
 </body>

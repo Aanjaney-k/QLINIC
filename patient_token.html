@@ -328,10 +328,21 @@
     }
 
     @media (max-width: 600px) {
-      .big-token { font-size: 5rem; }
-      .token-hero { padding: 32px 20px; }
-      .detail-grid { grid-template-columns: 1fr; }
-      .token-page > div:last-of-type { grid-template-columns: 1fr !important; }
+      .big-token {
+        font-size: 5rem;
+      }
+
+      .token-hero {
+        padding: 32px 20px;
+      }
+
+      .detail-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .token-page>div:last-of-type {
+        grid-template-columns: 1fr !important;
+      }
     }
 
     .detail-item {
@@ -476,15 +487,18 @@
       document.getElementById('detailGrid').innerHTML = '<div class="detail-item" style="grid-column:1/-1"><div class="di-label">No recent booking found</div></div>';
     } else {
       const appt = JSON.parse(raw);
-      const doc = DB.doctorById(appt.doctorId);
+      // Support both old camelCase (fallback) and new snake_case field names
+      const doctorId = appt.doctor_id || appt.doctorId;
       document.getElementById('tokenNum').textContent = `#${appt.token}`;
-      document.getElementById('detailGrid').innerHTML = `
+      DB.doctorById(doctorId).then(doc => {
+        document.getElementById('detailGrid').innerHTML = `
       <div class="detail-item d1"><div class="di-label">Doctor</div><div class="di-val">${doc ? doc.name : '—'}</div></div>
       <div class="detail-item d2"><div class="di-label">Speciality</div><div class="di-val">${doc ? doc.speciality : '—'}</div></div>
       <div class="detail-item d3"><div class="di-label">Date</div><div class="di-val">${formatDate(appt.date)}</div></div>
       <div class="detail-item d4"><div class="di-label">Time</div><div class="di-val">${appt.time}</div></div>
       <div class="detail-item d1" style="grid-column:1/-1"><div class="di-label">Status</div><div class="di-val">${statusBadge(appt.status)}</div></div>
     `;
+      });
     }
   </script>
 </body>

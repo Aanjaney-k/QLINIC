@@ -530,26 +530,21 @@
       });
     }
 
-    function init() {
+    async function init() {
       const session = Auth.requireRole('patient', 'patient_login.html');
 
-      // Derive the patient's booked hospital from their active appointments
-      const allAppts = DB.getAppointments();
-      const myActiveAppt = allAppts.find(a =>
-        a.patientId === session.id && (a.status === 'Pending' || a.status === 'Confirmed')
-      );
+      const myAppts = await DB.getAppointmentsByPatient(session.id);
+      const myActiveAppt = myAppts.find(a => a.status === 'Pending' || a.status === 'Confirmed');
 
       let bookedHospitalId = null;
-      if (myActiveAppt && myActiveAppt.hospitalId) {
-        bookedHospitalId = myActiveAppt.hospitalId;
+      if (myActiveAppt && myActiveAppt.hospital_id) {
+        bookedHospitalId = myActiveAppt.hospital_id;
       } else {
-        // Fallback: use HospitalSession if set
         const hs = HospitalSession.get();
         if (hs) bookedHospitalId = hs.id;
       }
 
-      // Show hospital name in subtitle
-      const hosp = bookedHospitalId ? SuperDB.hospitalById(bookedHospitalId) : null;
+      const hosp = bookedHospitalId ? await SuperDB.hospitalById(bookedHospitalId) : null;
       const hospNameEl = document.getElementById('hospNameDisplay');
       if (hosp) {
         hospNameEl.textContent = hosp.name;
@@ -558,10 +553,9 @@
         document.getElementById('noBookingWarn').style.display = 'flex';
       }
 
-      // Filter doctors to booked hospital only
-      const allDoctors = DB.getDoctors().filter(d => d.available);
+      const allDoctors = (await DB.getDoctors()).filter(d => d.available);
       const doctors = bookedHospitalId
-        ? allDoctors.filter(d => d.hospitalId === bookedHospitalId)
+        ? allDoctors.filter(d => d.hospital_id === bookedHospitalId)
         : allDoctors;
 
       const select = document.getElementById('doctorSelect');
@@ -571,24 +565,24 @@
       }
       select.innerHTML = doctors.map(d => `<option value="${d.id}">${d.name} (${d.speciality})</option>`).join('');
 
-      // Pre-select the doctor the patient actually booked with
       if (myActiveAppt) {
-        const myDoc = doctors.find(d => d.id === myActiveAppt.doctorId);
+        const myDoc = doctors.find(d => d.id === myActiveAppt.doctor_id);
         if (myDoc) select.value = myDoc.id;
       }
 
       updateBoard();
     }
 
-    function updateBoard() {
+    async function updateBoard() {
       const doctorId = document.getElementById('doctorSelect').value;
       if (!doctorId) return;
 
-      const appointments = DB.getAppointments().filter(a => a.doctorId === doctorId);
+      const appointments = await DB.getAppointmentsByDoctor(doctorId);
+      const patients = await DB.getPatients();
 
       const serving = appointments.find(a => a.status === 'Confirmed');
       if (serving) {
-        const p = DB.patientById(serving.patientId);
+        const p = patients.find(p => p.id === serving.patient_id);
         document.getElementById('servingToken').textContent = `#${serving.token}`;
         document.getElementById('servingName').textContent = p ? p.name : 'Unknown';
         document.getElementById('servingTime').textContent = `Called at ${serving.time}`;
@@ -600,7 +594,7 @@
 
       const completed = appointments.filter(a => a.status === 'Completed').sort((a, b) => b.token - a.token);
       if (completed.length > 0) {
-        const p = DB.patientById(completed[0].patientId);
+        const p = patients.find(p => p.id === completed[0].patient_id);
         document.getElementById('prevToken').textContent = `#${completed[0].token}`;
         document.getElementById('prevName').textContent = p ? p.name : 'Recently Served';
       } else {
@@ -612,7 +606,7 @@
       const queueEl = document.getElementById('nextQueue');
       if (pending.length > 0) {
         queueEl.innerHTML = pending.slice(0, 5).map(a => {
-          const p = DB.patientById(a.patientId);
+          const p = patients.find(p => p.id === a.patient_id);
           return `<div class="next-item"><span class="next-token-num">#${a.token}</span><span>${p ? p.name : 'Pending'}</span><span class="text-muted" style="font-size:0.8rem;">${a.time}</span></div>`;
         }).join('');
       } else {

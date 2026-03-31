@@ -540,32 +540,37 @@
     const hId = session.hospitalId;
     const hName = session.hospitalName || 'Clinic';
 
-    // Update UI branding
     const pageHeader = document.querySelector('.page-header h1');
     if (pageHeader) pageHeader.textContent = `All Appointments – ${hName}`;
-
-    const allAppts = DB.getAppointments().filter(a => a.hospitalId === hId);
 
     function animCount(el, target) {
       if (!el) return;
       let c = 0; const step = Math.max(1, Math.ceil(target / 20));
       const iv = setInterval(() => { c = Math.min(c + step, target); el.textContent = c; if (c >= target) clearInterval(iv); }, 50);
     }
-    setTimeout(() => {
-      animCount(document.getElementById('statTotal'), allAppts.length);
-      animCount(document.getElementById('statPending'), allAppts.filter(a => a.status === 'Pending').length);
-      animCount(document.getElementById('statConfirmed'), allAppts.filter(a => a.status === 'Confirmed').length);
-      animCount(document.getElementById('statCompleted'), allAppts.filter(a => a.status === 'Completed').length);
-    }, 1200);
+
+    let _allAppts = [], _allPatients = [], _allDoctors = [];
+
+    async function loadData() {
+      _allAppts = await DB.getAppointmentsByHospital(hId);
+      _allPatients = await DB.getPatients();
+      _allDoctors = await DB.getDoctorsByHospital(hId);
+      animCount(document.getElementById('statTotal'), _allAppts.length);
+      animCount(document.getElementById('statPending'), _allAppts.filter(a => a.status === 'Pending').length);
+      animCount(document.getElementById('statConfirmed'), _allAppts.filter(a => a.status === 'Confirmed').length);
+      animCount(document.getElementById('statCompleted'), _allAppts.filter(a => a.status === 'Completed').length);
+      renderTable();
+    }
 
     function renderTable() {
       const q = document.getElementById('searchInput').value.toLowerCase();
       const status = document.getElementById('statusFilter').value;
-      let appts = allAppts.slice().reverse();
+      let appts = _allAppts.slice().reverse();
       if (status) appts = appts.filter(a => a.status === status);
       if (q) {
         appts = appts.filter(a => {
-          const p = DB.patientById(a.patientId), d = DB.doctorById(a.doctorId);
+          const p = _allPatients.find(p => p.id === a.patient_id);
+          const d = _allDoctors.find(d => d.id === a.doctor_id);
           return (p && p.name.toLowerCase().includes(q)) || (d && d.name.toLowerCase().includes(q));
         });
       }
@@ -576,7 +581,8 @@
         return;
       }
       tbody.innerHTML = appts.map((a, i) => {
-        const p = DB.patientById(a.patientId), d = DB.doctorById(a.doctorId);
+        const p = _allPatients.find(p => p.id === a.patient_id);
+        const d = _allDoctors.find(d => d.id === a.doctor_id);
         const prx = a.prescription ? '<span class="badge badge-green">Yes</span>' : '<span class="badge badge-gray">No</span>';
         const isDone = a.status === 'Cancelled' || a.status === 'Completed';
         const action = isDone
@@ -597,19 +603,18 @@
       }).join('');
     }
 
-    function cancelAppt(id) {
+    async function cancelAppt(id) {
       if (!confirm('Cancel this appointment?')) return;
-      const all = DB.getAppointments(), idx = all.findIndex(a => a.id === id);
-      if (idx > -1) { all[idx].status = 'Cancelled'; DB.saveAppointments(all); }
+      await DB.cancelAppointment(id);
       showAlert('alert-box', 'Appointment cancelled.', 'success');
-      renderTable();
+      await loadData();
     }
 
-    function deleteAppt(id) {
+    async function deleteAppt(id) {
       if (!confirm('Permanently delete this appointment record?')) return;
-      DB.saveAppointments(DB.getAppointments().filter(a => a.id !== id));
+      await DB.deleteAppointment(id);
       showAlert('alert-box', 'Appointment deleted.', 'success');
-      renderTable();
+      await loadData();
     }
 
     function resetFilters() {
@@ -618,7 +623,7 @@
       renderTable();
     }
 
-    renderTable();
+    loadData();
   </script>
 </body>
 

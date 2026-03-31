@@ -764,59 +764,52 @@
     const bannerDesc = document.querySelector('.dbo-text p');
     if (bannerDesc) bannerDesc.textContent = `Management overview for ${hName}`;
 
-    // Filter data by hospital
-    const allDoctors = DB.getDoctors();
-    const allAppts = DB.getAppointments();
-    const allPatients = DB.getPatients();
-
-    const doctors = allDoctors.filter(d => d.hospitalId === hId);
-    const appts = allAppts.filter(a => a.hospitalId === hId);
-    
-    // For patients, we only show those who have at least one appointment at this hospital
-    // (In a more complex system, patients might be explicitly linked to hospitals)
-    const hospitalPatientIds = new Set(appts.map(a => a.patientId));
-    const patients = allPatients.filter(p => hospitalPatientIds.has(p.id));
-
-    const completed = appts.filter(a => a.status === 'Completed').length;
-
     function animCount(el, target) {
       if (!el) return;
       let cur = 0; const step = Math.max(1, Math.ceil(target / 20));
       const iv = setInterval(() => { cur = Math.min(cur + step, target); el.textContent = cur; if (cur >= target) clearInterval(iv); }, 50);
     }
 
-    setTimeout(() => {
+    async function loadDashboard() {
+      const allDoctors = await DB.getDoctorsByHospital(hId);
+      const allAppts = await DB.getAppointmentsByHospital(hId);
+      const allPatients = await DB.getPatients();
+      const hospitalPatientIds = new Set(allAppts.map(a => a.patient_id));
+      const patients = allPatients.filter(p => hospitalPatientIds.has(p.id));
+      const completed = allAppts.filter(a => a.status === 'Completed').length;
+
       animCount(document.getElementById('statPatients'), patients.length);
-      animCount(document.getElementById('statDoctors'), doctors.length);
-      animCount(document.getElementById('statAppts'), appts.length);
+      animCount(document.getElementById('statDoctors'), allDoctors.length);
+      animCount(document.getElementById('statAppts'), allAppts.length);
       animCount(document.getElementById('statCompleted'), completed);
       animCount(document.getElementById('bannerPatients'), patients.length);
-      animCount(document.getElementById('bannerDoctors'), doctors.length);
-      animCount(document.getElementById('bannerAppts'), appts.length);
-    }, 1200);
+      animCount(document.getElementById('bannerDoctors'), allDoctors.length);
+      animCount(document.getElementById('bannerAppts'), allAppts.length);
 
-    const recent = appts.slice(-6).reverse();
-    const tbody = document.getElementById('recentTable');
-    if (recent.length) {
-      tbody.innerHTML = recent.map((a, i) => {
-        const p = DB.patientById(a.patientId), d = DB.doctorById(a.doctorId);
-        return `<tr style="animation-delay:${i * .06}s">
-        <td><strong>${p ? p.name : '—'}</strong></td>
-        <td>${d ? d.name : '—'}</td>
-        <td>${formatDate(a.date)}</td>
-        <td><span style="font-family:var(--mono);font-weight:700;color:var(--primary);">#${a.token}</span></td>
-        <td>${statusBadge(a.status)}</td>
-      </tr>`;
-      }).join('');
-    } else {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:28px;">No appointments yet.</td></tr>';
+      const recent = allAppts.slice(-6).reverse();
+      const tbody = document.getElementById('recentTable');
+      if (recent.length) {
+        tbody.innerHTML = recent.map((a, i) => {
+          const p = allPatients.find(p => p.id === a.patient_id);
+          const d = allDoctors.find(d => d.id === a.doctor_id);
+          return `<tr style="animation-delay:${i * .06}s">
+          <td><strong>${p ? p.name : '—'}</strong></td>
+          <td>${d ? d.name : '—'}</td>
+          <td>${formatDate(a.date)}</td>
+          <td><span style="font-family:var(--mono);font-weight:700;color:var(--primary);">#${a.token}</span></td>
+          <td>${statusBadge(a.status)}</td>
+        </tr>`;
+        }).join('');
+      } else {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:28px;">No appointments yet.</td></tr>';
+      }
     }
+    setTimeout(loadDashboard, 1200);
 
-    function handleReset() {
+    async function handleReset() {
       if (confirm('Are you SURE you want to clear all appointments for THIS hospital? This cannot be undone.')) {
-        // Only clear appointments for this hospital
-        const remainingAppts = allAppts.filter(a => a.hospitalId !== hId);
-        DB.saveAppointments(remainingAppts);
+        const allAppts = await DB.getAppointmentsByHospital(hId);
+        for (const a of allAppts) await DB.deleteAppointment(a.id);
         alert('Hospital appointments have been cleared.');
         location.reload();
       }

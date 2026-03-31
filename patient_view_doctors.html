@@ -453,9 +453,10 @@
       'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=600&q=80',
     ];
 
-    function renderDoctors() {
+    async function renderDoctors() {
       const q = document.getElementById('searchInput').value.toLowerCase();
-      const doctors = DB.getDoctors().filter(d => !q || d.name.toLowerCase().includes(q) || d.speciality.toLowerCase().includes(q));
+      const allDoctors = await DB.getDoctors();
+      const doctors = allDoctors.filter(d => !q || d.name.toLowerCase().includes(q) || d.speciality.toLowerCase().includes(q));
       const grid = document.getElementById('doctorGrid');
       if (!doctors.length) { grid.innerHTML = '<p class="text-muted">No doctors found.</p>'; return; }
       grid.innerHTML = doctors.map((d, i) => `

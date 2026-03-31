@@ -664,26 +664,28 @@
 
     const session = Auth.requireRole('doctor', 'doctor_login.html');
     document.getElementById('welcomeMsg').textContent = `Welcome, ${session.name}!`;
-    const appts = DB.getAppointments().filter(a => a.doctorId === session.id);
 
     function animCount(el, target) { let c = 0; const step = Math.max(1, Math.ceil(target / 20)); const iv = setInterval(() => { c = Math.min(c + step, target); el.textContent = c; if (c >= target) clearInterval(iv); }, 50); }
-    setTimeout(() => {
+
+    async function loadDashboard() {
+      const appts = await DB.getAppointmentsByDoctor(session.id);
+      const patients = await DB.getPatients();
       animCount(document.getElementById('statTotal'), appts.length);
       animCount(document.getElementById('statPending'), appts.filter(a => a.status === 'Pending').length);
       animCount(document.getElementById('statConfirmed'), appts.filter(a => a.status === 'Confirmed').length);
       animCount(document.getElementById('statCompleted'), appts.filter(a => a.status === 'Completed').length);
-    }, 1200);
-
-    const recent = appts.slice(-5).reverse();
-    const tbody = document.getElementById('recentTable');
-    if (recent.length) {
-      tbody.innerHTML = recent.map((a, i) => {
-        const p = DB.patientById(a.patientId);
-        return `<tr style="animation:slideIn .35s ${i * .05}s ease both;"><td><strong>${p ? p.name : '—'}</strong></td><td>${formatDate(a.date)}</td><td>${a.time}</td><td><span style="font-family:var(--mono);font-weight:700;color:var(--primary);">#${a.token}</span></td><td>${statusBadge(a.status)}</td></tr>`;
-      }).join('');
-    } else {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:28px;">No appointments yet.</td></tr>';
+      const recent = appts.slice(-5).reverse();
+      const tbody = document.getElementById('recentTable');
+      if (recent.length) {
+        tbody.innerHTML = recent.map((a, i) => {
+          const p = patients.find(p => p.id === a.patient_id);
+          return `<tr style="animation:slideIn .35s ${i * .05}s ease both;"><td><strong>${p ? p.name : '—'}</strong></td><td>${formatDate(a.date)}</td><td>${a.time}</td><td><span style="font-family:var(--mono);font-weight:700;color:var(--primary);">#${a.token}</span></td><td>${statusBadge(a.status)}</td></tr>`;
+        }).join('');
+      } else {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:28px;">No appointments yet.</td></tr>';
+      }
     }
+    setTimeout(loadDashboard, 1200);
   </script>
 </body>
 

@@ -380,11 +380,28 @@
     }
 
     @media (max-width: 768px) {
-      .page-header { flex-direction: column; align-items: stretch; gap: 16px; }
-      .search-wrap { margin-left: 0 !important; width: 100%; }
-      .search-wrap .input-wrap { width: 100% !important; }
-      .stats-grid { grid-template-columns: 1fr; }
-      .topbar-brand span:last-child { display: none; }
+      .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+      }
+
+      .search-wrap {
+        margin-left: 0 !important;
+        width: 100%;
+      }
+
+      .search-wrap .input-wrap {
+        width: 100% !important;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar-brand span:last-child {
+        display: none;
+      }
     }
   </style>
 </head>
@@ -407,7 +424,7 @@
       <span
         style="font-size:.72rem;font-weight:500;color:var(--text-soft);margin-left:8px;background:var(--surface-2);padding:2px 8px;border-radius:4px;">Admin</span>
     </div>
-    
+
     <button class="menu-toggle" id="menuToggle" style="margin-left:auto;">☰</button>
 
     <nav class="topbar-nav" id="topbarNav">
@@ -497,13 +514,8 @@
     const hId = session.hospitalId;
     const hName = session.hospitalName || 'Clinic';
 
-    // Update UI branding
     const pageHeader = document.querySelector('.page-header h1');
     if (pageHeader) pageHeader.textContent = `Patients – ${hName}`;
-
-    const allAppts = DB.getAppointments().filter(a => a.hospitalId === hId);
-    const hospitalPatientIds = new Set(allAppts.map(a => a.patientId));
-    const allPatients = DB.getPatients().filter(p => hospitalPatientIds.has(p.id));
 
     function animCount(el, target) {
       if (!el) return;
@@ -511,30 +523,37 @@
       const iv = setInterval(() => { c = Math.min(c + step, target); el.textContent = c; if (c >= target) clearInterval(iv); }, 50);
     }
 
-    const thisMonth = allPatients.filter(p => {
-      if (!p.dob) return false;
-      const d = new Date(p.dob); return d.getMonth() === new Date().getMonth() && d.getFullYear() === new Date().getFullYear();
-    }).length;
-    const withAppts = allPatients.length; // In this filtered view, they all have/had appts
+    let _allAppts = [], _allPatients = [];
 
-    setTimeout(() => {
-      animCount(document.getElementById('totalCount'), allPatients.length);
+    async function loadData() {
+      _allAppts = await DB.getAppointmentsByHospital(hId);
+      const allPts = await DB.getPatients();
+      const hospitalPatientIds = new Set(_allAppts.map(a => a.patient_id));
+      _allPatients = allPts.filter(p => hospitalPatientIds.has(p.id));
+
+      const thisMonth = _allPatients.filter(p => {
+        if (!p.dob) return false;
+        const d = new Date(p.dob); return d.getMonth() === new Date().getMonth() && d.getFullYear() === new Date().getFullYear();
+      }).length;
+
+      animCount(document.getElementById('totalCount'), _allPatients.length);
       animCount(document.getElementById('newCount'), thisMonth);
-      animCount(document.getElementById('withAppts'), withAppts);
-    }, 1200);
+      animCount(document.getElementById('withAppts'), _allPatients.length);
+      renderTable();
+    }
 
     function renderTable() {
       const q = document.getElementById('searchInput').value.toLowerCase();
-      const patients = allPatients.filter(p => !q || p.name.toLowerCase().includes(q) || p.email.toLowerCase().includes(q));
+      const patients = _allPatients.filter(p => !q || p.name.toLowerCase().includes(q) || p.email.toLowerCase().includes(q));
       const tbody = document.getElementById('patientTable');
-      document.getElementById('tableFooter').textContent = `Showing ${patients.length} of ${allPatients.length} patients`;
+      document.getElementById('tableFooter').textContent = `Showing ${patients.length} of ${_allPatients.length} patients`;
 
       if (!patients.length) {
         tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted" style="padding:32px;">No patients found.</td></tr>';
         return;
       }
       tbody.innerHTML = patients.map((p, i) => {
-        const count = allAppts.filter(a => a.patientId === p.id).length;
+        const count = _allAppts.filter(a => a.patient_id === p.id).length;
         const initials = p.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
         return `<tr style="animation:slideIn .35s ${i * .04}s ease both;">
         <td class="text-muted" style="font-size:.8rem;">${i + 1}</td>
@@ -556,7 +575,7 @@
       }).join('');
     }
 
-    renderTable();
+    setTimeout(loadData, 1200);
   </script>
 </body>
 

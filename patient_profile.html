@@ -564,15 +564,18 @@
       });
     }
     const session = Auth.requireRole('patient', 'patient_login.html');
-    let patient = DB.patientById(session.id);
-    document.getElementById('name').value = patient.name;
-    document.getElementById('email').value = patient.email;
-    document.getElementById('phone').value = patient.phone;
-    document.getElementById('dob').value = patient.dob;
-    document.getElementById('gender').value = patient.gender;
-    document.getElementById('sidebarName').textContent = patient.name;
-    document.getElementById('sidebarEmail').textContent = patient.email;
-    document.getElementById('profileForm').addEventListener('submit', function (e) {
+    async function loadProfile() {
+      const patient = await DB.patientById(session.id);
+      document.getElementById('name').value = patient.name;
+      document.getElementById('email').value = patient.email;
+      document.getElementById('phone').value = patient.phone || '';
+      document.getElementById('dob').value = patient.dob || '';
+      document.getElementById('gender').value = patient.gender || '';
+      document.getElementById('sidebarName').textContent = patient.name;
+      document.getElementById('sidebarEmail').textContent = patient.email;
+    }
+    loadProfile();
+    document.getElementById('profileForm').addEventListener('submit', async function (e) {
       e.preventDefault();
       const name = document.getElementById('name').value.trim();
       const email = document.getElementById('email').value.trim().toLowerCase();
@@ -584,14 +587,14 @@
       if (!name || !email || !phone || !dob) return showAlert('alert-box', 'Please fill in all required fields.');
       if (newPass && newPass.length < 6) return showAlert('alert-box', 'Password must be at least 6 characters.');
       if (newPass && newPass !== confPass) return showAlert('alert-box', 'Passwords do not match.');
-      const patients = DB.getPatients(); const idx = patients.findIndex(p => p.id === session.id);
-      if (idx > -1) {
-        patients[idx] = { ...patients[idx], name, email, phone, dob, gender };
-        if (newPass) patients[idx].password = newPass;
-        DB.savePatients(patients); Auth.session = { ...Auth.session, name };
+      try {
+        await DB.updatePatient(session.id, { name, email, phone, dob, gender });
+        Auth.session = { ...Auth.session, name };
         document.getElementById('sidebarName').textContent = name;
         document.getElementById('sidebarEmail').textContent = email;
         showAlert('alert-box', 'Profile updated successfully!', 'success');
+      } catch (err) {
+        showAlert('alert-box', err.message || 'Update failed.');
       }
     });
   </script>

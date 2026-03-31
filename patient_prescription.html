@@ -364,10 +364,26 @@
     }
 
     @media (max-width: 600px) {
-      .flex-between { flex-direction: column; align-items: stretch; gap: 12px; }
-      .flex-between div:last-child { display: flex; flex-direction: column; gap: 8px; }
-      .flex-between div:last-child * { width: 100%; text-align: center; }
-      .topbar-brand span:last-child { display: none; }
+      .flex-between {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+
+      .flex-between div:last-child {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .flex-between div:last-child * {
+        width: 100%;
+        text-align: center;
+      }
+
+      .topbar-brand span:last-child {
+        display: none;
+      }
     }
   </style>
 </head>
@@ -426,13 +442,16 @@
     }
     Auth.requireRole('patient', 'patient_login.html');
     const params = new URLSearchParams(location.search);
-    const appt = DB.getAppointments().find(a => a.id === params.get('apptId'));
     const card = document.getElementById('rxCard');
-    if (!appt || !appt.prescription) {
-      card.innerHTML = '<div style="padding:48px;text-align:center;color:var(--text-muted);">No prescription found for this appointment.</div>';
-    } else {
-      const doc = DB.doctorById(appt.doctorId);
-      const pat = DB.patientById(appt.patientId);
+    (async () => {
+      const appts = await DB.getAppointments();
+      const appt = appts.find(a => a.id === params.get('apptId'));
+      if (!appt || !appt.prescription) {
+        card.innerHTML = '<div style="padding:48px;text-align:center;color:var(--text-muted);">No prescription found for this appointment.</div>';
+        return;
+      }
+      const doc = await DB.doctorById(appt.doctor_id);
+      const pat = await DB.patientById(appt.patient_id);
       card.innerHTML = `
       <div class="rx-head">
         <div class="rx-brand">Q<span class="dot">.</span>LINIC</div>
@@ -461,7 +480,7 @@
           </div>
         </div>
       </div>`;
-    }
+    })();
   </script>
 </body>
 

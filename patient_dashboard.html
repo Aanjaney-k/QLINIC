@@ -929,41 +929,16 @@
       const iv = setInterval(() => { c = Math.min(c + step, target); el.textContent = c; if (c >= target) clearInterval(iv); }, 50);
     }
 
-    // ── Hospital selection ──
-    function renderHospitals() {
-      const hospitals = SuperDB.getHospitals().filter(h => h.status === 'active');
-      const grid = document.getElementById('hospitalsGrid');
-      const selected = HospitalSession.get();
-
-      if (!hospitals.length) {
-        grid.innerHTML = `<div class="no-hospitals" style="grid-column:1/-1;"><div class="ni">🏥</div><p>No hospitals available yet. Please contact your administrator.</p></div>`;
-        return;
-      }
-
-      grid.innerHTML = hospitals.map((h, i) => `
-        <div class="hosp-card ${selected && selected.id === h.id ? 'selected' : ''}"
-             style="animation:fadeUp .4s ${i * .07}s ease both;"
-             onclick="selectHospital('${h.id}','${h.name.replace(/'/g, "\'")}','${h.city.replace(/'/g, "\'")}')">
-          <div class="hosp-icon">🏥</div>
-          <div class="hosp-name">${h.name}</div>
-          <div class="hosp-city">📍 ${h.city}</div>
-          <div class="hosp-status"><span class="dot"></span> Active</div>
-        </div>`).join('');
-    }
-
     function selectHospital(id, name, city) {
       HospitalSession.set({ id, name, city });
-      renderHospitals();
-      updateSelectedBar();
-      // Update banner subtitle
+      loadDashboard();
       document.getElementById('bannerSub').textContent = `Booking at ${name}`;
       showAlert('alert-box-dash', `Hospital selected: ${name}`, 'success');
     }
 
     function clearHospital() {
       HospitalSession.clear();
-      renderHospitals();
-      updateSelectedBar();
+      loadDashboard();
       document.getElementById('bannerSub').textContent = "Here's your health activity summary";
     }
 
@@ -979,18 +954,45 @@
     }
 
     // ── Stats ──
-    const appts = DB.getAppointments().filter(a => a.patientId === session.id);
-    setTimeout(() => {
+    async function loadDashboard() {
+      const appts = await DB.getAppointmentsByPatient(session.id);
       animCount(document.getElementById('statTotal'), appts.length);
       animCount(document.getElementById('statPending'), appts.filter(a => a.status === 'Pending').length);
       animCount(document.getElementById('statConfirmed'), appts.filter(a => a.status === 'Confirmed').length);
       animCount(document.getElementById('statCompleted'), appts.filter(a => a.status === 'Completed').length);
-      renderHospitals();
+
+      const hospitals = (await SuperDB.getHospitals()).filter(h => h.status === 'active');
+      const grid = document.getElementById('hospitalsGrid');
+      const selected = HospitalSession.get();
+      if (!hospitals.length) {
+        grid.innerHTML = `<div class="no-hospitals" style="grid-column:1/-1;"><div class="ni">🏥</div><p>No hospitals available yet.</p></div>`;
+      } else {
+        grid.innerHTML = hospitals.map((h, i) => `
+          <div class="hosp-card ${selected && selected.id === h.id ? 'selected' : ''}"
+               style="animation:fadeUp .4s ${i * .07}s ease both;"
+               onclick="selectHospital('${h.id}','${h.name.replace(/'/g, "\\'")}','${h.city.replace(/'/g, "\\'")}')">
+            <div class="hosp-icon">🏥</div>
+            <div class="hosp-name">${h.name}</div>
+            <div class="hosp-city">📍 ${h.city}</div>
+            <div class="hosp-status"><span class="dot"></span> Active</div>
+          </div>`).join('');
+      }
       updateSelectedBar();
-      // Restore banner subtitle if hospital selected
       const h = HospitalSession.get();
       if (h) document.getElementById('bannerSub').textContent = `Booking at ${h.name}`;
-    }, 1200);
+
+      // Recent appointments
+      const recent = appts.slice(-5).reverse();
+      if (recent.length) {
+        const doctors = await DB.getDoctors();
+        document.getElementById('recentTable').innerHTML = recent.map((a, i) => {
+          const doc = doctors.find(d => d.id === a.doctor_id);
+          return `<tr style="animation:slideIn .35s ${i * .05}s ease both;"><td><strong>${doc ? doc.name : '—'}</strong></td><td><span class="text-muted">${doc ? doc.speciality : '—'}</span></td><td>${formatDate(a.date)}</td><td><span style="font-family:var(--mono);font-weight:700;color:var(--primary);">#${a.token}</span></td><td>${statusBadge(a.status)}</td></tr>`;
+        }).join('');
+      }
+
+      await tdInitBoard(appts);
+    }
 
     // Alert box for dashboard
     if (!document.getElementById('alert-box-dash')) {
@@ -998,63 +1000,33 @@
       document.querySelector('.page-wrap').insertBefore(el, document.querySelector('.page-wrap').firstChild);
     }
 
-    // ── Recent appointments ──
-    const recent = appts.slice(-5).reverse();
-    if (recent.length) {
-      document.getElementById('recentTable').innerHTML = recent.map((a, i) => {
-        const doc = DB.doctorById(a.doctorId);
-        return `<tr style="animation:slideIn .35s ${i * .05}s ease both;"><td><strong>${doc ? doc.name : '—'}</strong></td><td><span class="text-muted">${doc ? doc.speciality : '—'}</span></td><td>${formatDate(a.date)}</td><td><span style="font-family:var(--mono);font-weight:700;color:var(--primary);">#${a.token}</span></td><td>${statusBadge(a.status)}</td></tr>`;
-      }).join('');
-    }
-
-
     // ── Embedded Token Display Board ──
-    function tdInitBoard() {
-      const allAppts = DB.getAppointments();
-      const myActiveAppt = allAppts.find(a =>
-        a.patientId === session.id && (a.status === 'Pending' || a.status === 'Confirmed')
-      );
+    async function tdInitBoard(appts) {
+      const myActiveAppt = (appts || await DB.getAppointmentsByPatient(session.id))
+        .find(a => a.patient_id === session.id && (a.status === 'Pending' || a.status === 'Confirmed'));
 
-      let bookedHospitalId = null;
-      if (myActiveAppt && myActiveAppt.hospitalId) {
-        bookedHospitalId = myActiveAppt.hospitalId;
-      } else {
-        const hs = HospitalSession.get();
-        if (hs) bookedHospitalId = hs.id;
-      }
+      let bookedHospitalId = myActiveAppt ? myActiveAppt.hospital_id : null;
+      if (!bookedHospitalId) { const hs = HospitalSession.get(); if (hs) bookedHospitalId = hs.id; }
 
-      const allDoctors = DB.getDoctors().filter(d => d.available);
-      const doctors = bookedHospitalId
-        ? allDoctors.filter(d => d.hospitalId === bookedHospitalId)
-        : allDoctors;
+      const allDoctors = (await DB.getDoctors()).filter(d => d.available);
+      const doctors = bookedHospitalId ? allDoctors.filter(d => d.hospital_id === bookedHospitalId) : allDoctors;
 
       const select = document.getElementById('tdDoctorSelect');
-      if (!doctors.length) {
-        select.innerHTML = '<option value="">No doctors available</option>';
-        return;
-      }
-      select.innerHTML = doctors.map(d =>
-        `<option value="${d.id}">${d.name} (${d.speciality})</option>`
-      ).join('');
-
-      if (myActiveAppt) {
-        const myDoc = doctors.find(d => d.id === myActiveAppt.doctorId);
-        if (myDoc) select.value = myDoc.id;
-      }
-
-      tdUpdateBoard();
+      if (!doctors.length) { select.innerHTML = '<option value="">No doctors available</option>'; return; }
+      select.innerHTML = doctors.map(d => `<option value="${d.id}">${d.name} (${d.speciality})</option>`).join('');
+      if (myActiveAppt) { const myDoc = doctors.find(d => d.id === myActiveAppt.doctor_id); if (myDoc) select.value = myDoc.id; }
+      await tdUpdateBoard();
     }
 
-    function tdUpdateBoard() {
+    async function tdUpdateBoard() {
       const doctorId = document.getElementById('tdDoctorSelect').value;
       if (!doctorId) return;
+      const appointments = await DB.getAppointmentsByDoctor(doctorId);
+      const patients = await DB.getPatients();
 
-      const appointments = DB.getAppointments().filter(a => a.doctorId === doctorId);
-
-      // Now serving
       const serving = appointments.find(a => a.status === 'Confirmed');
       if (serving) {
-        const p = DB.patientById(serving.patientId);
+        const p = patients.find(p => p.id === serving.patient_id);
         document.getElementById('tdServingToken').textContent = `#${serving.token}`;
         document.getElementById('tdServingName').textContent = p ? p.name : 'Unknown';
         document.getElementById('tdServingTime').textContent = `Called at ${serving.time}`;
@@ -1064,10 +1036,9 @@
         document.getElementById('tdServingTime').textContent = '';
       }
 
-      // Previous token
       const completed = appointments.filter(a => a.status === 'Completed').sort((a, b) => b.token - a.token);
       if (completed.length > 0) {
-        const p = DB.patientById(completed[0].patientId);
+        const p = patients.find(p => p.id === completed[0].patient_id);
         document.getElementById('tdPrevToken').textContent = `#${completed[0].token}`;
         document.getElementById('tdPrevName').textContent = p ? p.name : 'Recently Served';
       } else {
@@ -1075,12 +1046,11 @@
         document.getElementById('tdPrevName').textContent = 'Recently Served';
       }
 
-      // Next in queue
       const pending = appointments.filter(a => a.status === 'Pending').sort((a, b) => a.token - b.token);
       const queueEl = document.getElementById('tdNextQueue');
       if (pending.length > 0) {
         queueEl.innerHTML = pending.slice(0, 4).map(a => {
-          const p = DB.patientById(a.patientId);
+          const p = patients.find(p => p.id === a.patient_id);
           return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface-2);border-radius:10px;margin-bottom:7px;font-weight:500;font-size:.82rem;">
             <span style="color:var(--primary);font-weight:700;font-family:'JetBrains Mono',monospace;">#${a.token}</span>
             <span>${p ? p.name : 'Pending'}</span>
@@ -1091,14 +1061,13 @@
         queueEl.innerHTML = '<div style="text-align:center;color:var(--text-soft);padding:14px;font-size:.85rem;">Queue is empty</div>';
       }
 
-      // Stats
       document.getElementById('tdTotalWaiting').textContent = pending.length;
       document.getElementById('tdTotalServed').textContent = completed.length;
       document.getElementById('tdAvgWait').textContent = pending.length > 0 ? (pending.length * 15) + ' mins' : '— mins';
     }
 
     // Init board after stats load
-    setTimeout(() => { tdInitBoard(); }, 1300);
+    setTimeout(() => { loadDashboard(); }, 1200);
     setInterval(tdUpdateBoard, 5000);
 
 

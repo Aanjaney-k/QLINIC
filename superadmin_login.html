@@ -535,25 +535,28 @@
         window.addEventListener('load', () => setTimeout(() => document.getElementById('loader').classList.add('gone'), 1100));
 
         // Live stats
-        try {
-            const hospitals = SuperDB.getHospitals();
-            const admins = SuperDB.getAdmins();
-            document.getElementById('vbHospitals').textContent = hospitals.length || '0';
-            document.getElementById('vbAdmins').textContent = admins.length || '0';
-        } catch (e) { }
+        (async () => {
+            try {
+                const hospitals = await SuperDB.getHospitals();
+                const admins = await SuperDB.getAdmins();
+                document.getElementById('vbHospitals').textContent = hospitals.length || '0';
+                document.getElementById('vbAdmins').textContent = admins.length || '0';
+            } catch (e) { }
+        })();
 
         // Redirect if already logged in
         if (Auth.session && Auth.session.role === 'superadmin') location.href = 'superadmin_dashboard.html';
 
-        document.getElementById('loginForm').addEventListener('submit', function (e) {
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
             e.preventDefault();
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
-            if (username === 'superadmin' && password === 'super123') {
-                Auth.session = { id: 'SA001', name: 'Super Administrator', role: 'superadmin' };
+            if (!username || !password) return showAlert('alert-box', 'Please enter username and password.');
+            try {
+                await Auth.loginSuperAdmin(username, password);
                 location.href = 'superadmin_dashboard.html';
-            } else {
-                showAlert('alert-box', 'Invalid super admin credentials.');
+            } catch (err) {
+                showAlert('alert-box', err.message || 'Invalid super admin credentials.');
             }
         });
     </script>

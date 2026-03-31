@@ -460,11 +460,28 @@
     }
 
     @media (max-width: 768px) {
-      .page-header { flex-direction: column; align-items: stretch; gap: 16px; }
-      .page-header button { width: 100%; margin-left: 0 !important; }
-      .stats-grid { grid-template-columns: 1fr; }
-      .doctor-grid { grid-template-columns: 1fr; }
-      .topbar-brand span:last-child { display: none; }
+      .page-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+      }
+
+      .page-header button {
+        width: 100%;
+        margin-left: 0 !important;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .doctor-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar-brand span:last-child {
+        display: none;
+      }
     }
   </style>
 </head>
@@ -487,7 +504,7 @@
       <span
         style="font-size:.72rem;font-weight:500;color:var(--text-soft);margin-left:8px;background:var(--surface-2);padding:2px 8px;border-radius:4px;">Admin</span>
     </div>
-    
+
     <button class="menu-toggle" id="menuToggle" style="margin-left:auto;">☰</button>
 
     <nav class="topbar-nav" id="topbarNav">
@@ -610,10 +627,10 @@
       const iv = setInterval(() => { c = Math.min(c + step, target); el.textContent = c; if (c >= target) clearInterval(iv); }, 50);
     }
 
-    function renderDoctors() {
-      const allDoctors = DB.getDoctors(), allAppts = DB.getAppointments();
-      const doctors = allDoctors.filter(d => d.hospitalId === hId);
-      
+    async function renderDoctors() {
+      const doctors = await DB.getDoctorsByHospital(hId);
+      const allAppts = await DB.getAppointmentsByHospital(hId);
+
       animCount(document.getElementById('totalDocs'), doctors.length);
       animCount(document.getElementById('availDocs'), doctors.filter(d => d.available).length);
       animCount(document.getElementById('unavailDocs'), doctors.filter(d => !d.available).length);
@@ -624,7 +641,7 @@
         return;
       }
       grid.innerHTML = doctors.map((d, i) => {
-        const count = allAppts.filter(a => a.doctorId === d.id).length;
+        const count = allAppts.filter(a => a.doctor_id === d.id).length;
         return `
       <div class="doc-card" style="animation-delay:${i * .07}s;">
         <div class="doc-card-top">
@@ -652,16 +669,15 @@
       }).join('');
     }
 
-    function toggleAvail(id) {
-      const docs = DB.getDoctors(), idx = docs.findIndex(d => d.id === id);
-      if (idx > -1) { docs[idx].available = !docs[idx].available; DB.saveDoctors(docs); renderDoctors(); }
+    async function toggleAvail(id) {
+      await DB.toggleDoctorAvailability(id);
+      renderDoctors();
     }
 
-    function deleteDoctor(id, name, count) {
+    async function deleteDoctor(id, name, count) {
       const msg = count > 0 ? `${name} has ${count} appointment(s). Deleting will remove all their appointments. Continue?` : `Delete Dr. ${name}? This cannot be undone.`;
       if (!confirm(msg)) return;
-      if (count > 0) DB.saveAppointments(DB.getAppointments().filter(a => a.doctorId !== id));
-      DB.saveDoctors(DB.getDoctors().filter(d => d.id !== id));
+      await DB.deleteDoctor(id);
       showAlert('alert-box', `${name} has been removed.`, 'success');
       renderDoctors();
     }
@@ -673,27 +689,21 @@
       document.getElementById('modal-alert').innerHTML = '';
     }
 
-    document.getElementById('addDoctorForm').addEventListener('submit', function (e) {
+    document.getElementById('addDoctorForm').addEventListener('submit', async function (e) {
       e.preventDefault();
       const name = document.getElementById('docName').value.trim();
       const email = document.getElementById('docEmail').value.trim().toLowerCase();
-      const pass = document.getElementById('docPass').value;
       const spec = document.getElementById('docSpec').value.trim();
       const phone = document.getElementById('docPhone').value.trim();
-      if (!name || !email || !pass || !spec || !phone) return showAlert('modal-alert', 'Please fill in all fields.');
-      
-      const allDoctors = DB.getDoctors();
-      if (allDoctors.find(d => d.email === email)) return showAlert('modal-alert', 'A doctor with this email already exists.');
-      
-      allDoctors.push({ 
-        id: DB.nextId('D', allDoctors), 
-        name, email, password: pass, speciality: spec, phone, available: true,
-        hospitalId: hId 
-      });
-      DB.saveDoctors(allDoctors);
-      closeModal();
-      showAlert('alert-box', `${name} added successfully!`, 'success');
-      renderDoctors();
+      if (!name || !email || !spec || !phone) return showAlert('modal-alert', 'Please fill in all fields.');
+      try {
+        await DB.addDoctor({ hospitalId: hId, name, email, speciality: spec, phone });
+        closeModal();
+        showAlert('alert-box', `${name} added successfully!`, 'success');
+        renderDoctors();
+      } catch (err) {
+        showAlert('modal-alert', err.message || 'Failed to add doctor.');
+      }
     });
     renderDoctors();
   </script>

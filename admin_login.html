@@ -421,10 +421,25 @@
     }
 
     @media (max-width: 900px) {
-      .auth-page { display: block; overflow: visible; }
-      .auth-visual { display: none; }
-      .auth-form-side { min-height: 100vh; padding: 24px 20px; overflow: visible; }
-      .auth-card { padding: 0; max-width: 100%; }
+      .auth-page {
+        display: block;
+        overflow: visible;
+      }
+
+      .auth-visual {
+        display: none;
+      }
+
+      .auth-form-side {
+        min-height: 100vh;
+        padding: 24px 20px;
+        overflow: visible;
+      }
+
+      .auth-card {
+        padding: 0;
+        max-width: 100%;
+      }
     }
   </style>
 </head>
@@ -493,37 +508,24 @@
     window.addEventListener('load', () => setTimeout(() => document.getElementById('loader').classList.add('gone'), 1100));
 
     // Live stats on visual
-    try {
-      document.getElementById('vbPatients').textContent = DB.getPatients().length || '—';
-      document.getElementById('vbDoctors').textContent = DB.getDoctors().length || '—';
-    } catch (e) { }
+    (async () => {
+      try {
+        document.getElementById('vbPatients').textContent = (await DB.getPatients()).length || '—';
+        document.getElementById('vbDoctors').textContent = (await DB.getDoctors()).length || '—';
+      } catch (e) { }
+    })();
 
     if (Auth.session && Auth.session.role === 'admin') location.href = 'admin_dashboard.html';
-    document.getElementById('loginForm').addEventListener('submit', function (e) {
+    document.getElementById('loginForm').addEventListener('submit', async function (e) {
       e.preventDefault();
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value;
-
-      // 1. Check for global demo admin
-      if (username === 'admin' && password === 'admin123') {
-        Auth.session = { id: 'ADMIN', name: 'Administrator', role: 'admin', hospitalId: 'H_DEMO1', hospitalName: 'QLINIC City Hospital' };
+      if (!username || !password) return showAlert('alert-box', 'Please enter username and password.');
+      try {
+        await Auth.loginAdmin(username, password);
         location.href = 'admin_dashboard.html';
-        return;
-      }
-
-      // 2. Check for hospital-specific admins
-      const admin = SuperDB.adminByUsername(username);
-      if (admin && admin.password === password) {
-        Auth.session = {
-          id: admin.id,
-          name: admin.name,
-          role: 'admin',
-          hospitalId: admin.hospitalId,
-          hospitalName: admin.hospitalName
-        };
-        location.href = 'admin_dashboard.html';
-      } else {
-        showAlert('alert-box', 'Invalid admin credentials.');
+      } catch (err) {
+        showAlert('alert-box', err.message || 'Invalid admin credentials.');
       }
     });
   </script>
