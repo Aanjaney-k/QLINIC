@@ -456,29 +456,43 @@
 
     async function renderDoctors() {
       const q = document.getElementById('searchInput').value.toLowerCase();
-      const allDoctors = await DB.getDoctors();
+      const [allDoctors, allHospitals] = await Promise.all([DB.getDoctors(), DB.getHospitals()]);
+      const hospitalMap = {};
+      allHospitals.forEach(h => hospitalMap[h.id] = h);
       const doctors = allDoctors.filter(d => !q || d.name.toLowerCase().includes(q) || d.speciality.toLowerCase().includes(q));
       const grid = document.getElementById('doctorGrid');
       if (!doctors.length) { grid.innerHTML = '<p class="text-muted">No doctors found.</p>'; return; }
-      grid.innerHTML = doctors.map((d, i) => `
-      <div class="doc-card" style="animation-delay:${i * .07}s;">
-        <div class="doc-card-header">
-          <img src="${docPhotos[i % docPhotos.length]}" alt="${d.name}" loading="lazy"/>
-          <div class="doc-card-header-overlay"></div>
-          <div class="doc-avail">${d.available ? '<span class="badge badge-green">Available</span>' : '<span class="badge badge-red">Unavailable</span>'}</div>
-        </div>
-        <div class="doc-body">
-          <div class="doc-avatar-wrap"><div class="doc-avatar">🩺</div></div>
-          <div class="doc-name">${d.name}</div>
-          <div class="doc-spec">🏷️ ${d.speciality}</div>
-          <div class="doc-phone">📞 ${d.phone}</div>
-          <div style="margin-top:14px;">
-            ${d.available
-          ? `<a href="patient_book_appointment.html?doctorId=${d.id}" class="btn btn-primary w-100" style="justify-content:center;">Book Appointment</a>`
-          : `<button class="btn btn-outline w-100" style="justify-content:center;opacity:.5;cursor:not-allowed;" disabled>Not Available</button>`}
+      grid.innerHTML = doctors.map((d, i) => {
+        const hospital = hospitalMap[d.hospital_id];
+        const hospitalName = hospital ? hospital.name : 'Unknown Hospital';
+        const hospitalCity = hospital ? hospital.city : '';
+        return `
+        <div class="doc-card" style="animation-delay:${i * .07}s;">
+          <div class="doc-card-header">
+            <img src="${docPhotos[i % docPhotos.length]}" alt="${d.name}" loading="lazy"/>
+            <div class="doc-card-header-overlay"></div>
+            <div class="doc-avail">${d.available ? '<span class="badge badge-green">Available</span>' : '<span class="badge badge-red">Unavailable</span>'}</div>
           </div>
-        </div>
-      </div>`).join('');
+          <div class="doc-body">
+            <div class="doc-avatar-wrap"><div class="doc-avatar">🩺</div></div>
+            <div class="doc-name">${d.name}</div>
+            <div class="doc-spec">🏷️ ${d.speciality}</div>
+            <div class="doc-phone">📞 ${d.phone}</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:8px;padding:8px 10px;background:var(--primary-lt,#e0f7fa);border-radius:8px;">
+              <span style="font-size:1rem;">🏥</span>
+              <div>
+                <div style="font-size:.78rem;font-weight:700;color:var(--primary);">${hospitalName}</div>
+                ${hospitalCity ? `<div style="font-size:.72rem;color:var(--text-muted);">📍 ${hospitalCity}</div>` : ''}
+              </div>
+            </div>
+            <div style="margin-top:14px;">
+              ${d.available
+            ? `<a href="patient_book_appointment.html?doctorId=${d.id}" class="btn btn-primary w-100" style="justify-content:center;">Book Appointment</a>`
+            : `<button class="btn btn-outline w-100" style="justify-content:center;opacity:.5;cursor:not-allowed;" disabled>Not Available</button>`}
+            </div>
+          </div>
+        </div>`;
+      }).join('');
     }
     renderDoctors();
   </script>
