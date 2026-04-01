@@ -242,7 +242,11 @@ const SuperDB = {
     if (hErr) throw hErr;
 
     const adminEmail = adminUsername + '@qlinic.com';
-    const { data: authData, error: authErr } = await _supabase.auth.signUp({ email: adminEmail, password: adminPassword });
+    const { data: authData, error: authErr } = await _supabase.auth.signUp({
+      email: adminEmail,
+      password: adminPassword,
+      options: { data: { role: 'admin' }, emailRedirectTo: null }
+    });
     if (authErr) throw authErr;
 
     const admins = await this.getAdmins();
