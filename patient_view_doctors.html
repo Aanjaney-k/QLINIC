@@ -456,8 +456,7 @@
 
     async function renderDoctors() {
       const q = document.getElementById('searchInput').value.toLowerCase();
-      const [allDoctors, allHospitals] = await Promise.all([DB.getDoctors(), DB.getHospitals()]);
-      const hospitalMap = {};
+      const [allDoctors, allHospitals] = await Promise.all([DB.getDoctors(), SuperDB.getHospitals()]);
       allHospitals.forEach(h => hospitalMap[h.id] = h);
       const doctors = allDoctors.filter(d => !q || d.name.toLowerCase().includes(q) || d.speciality.toLowerCase().includes(q));
       const grid = document.getElementById('doctorGrid');
