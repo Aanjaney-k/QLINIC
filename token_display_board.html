@@ -577,8 +577,9 @@
     async function updateBoard() {
       const doctorId = document.getElementById('doctorSelect').value;
       if (!doctorId) return;
-
-      const appointments = await DB.getAppointmentsByDoctor(doctorId);
+      const today = DB.getTodayDate();
+      let appointments = await DB.getAppointmentsByDoctor(doctorId);
+      appointments = appointments.filter(a => a.date === today);
       const patients = await DB.getPatients();
 
       const serving = appointments.find(a => a.status === 'Confirmed');

@@ -965,11 +965,15 @@
 
         // ── Main render function ──────────────────────────────────────
         async function render() {
-            const allAppts = await DB.getAppointments();
+            let allAppts = await DB.getAppointments();
+            const today = DB.getTodayDate();
             const patients = await DB.getPatients();
             const doctors = await DB.getDoctors();
             const myAppts = allAppts.filter(a => a.patient_id === session.id);
-            const myActive = myAppts.filter(isActive);
+
+            // Filter for live queue/active tokens
+            const liveAppts = allAppts.filter(a => a.date === today);
+            const myActive = myAppts.filter(a => a.date === today && isActive(a));
 
             const grid = document.getElementById('myTokensGrid');
             const emptyState = document.getElementById('emptyState');
@@ -997,7 +1001,7 @@
 
             myActive.forEach((appt, i) => {
                 const doc = doctors.find(d => d.id === appt.doctor_id);
-                const docQueue = allAppts
+                const docQueue = liveAppts
                     .filter(a => a.doctor_id === appt.doctor_id && (a.status === 'Pending' || a.status === 'Confirmed'))
                     .sort((a, b) => a.token - b.token);
                 const nowServing = docQueue.find(a => a.status === 'Confirmed');
@@ -1009,7 +1013,7 @@
                 if (appt.status === 'Confirmed') cardClass = 'active-token';
                 else if (appt.status === 'Pending' && aheadCnt <= 2) cardClass = 'pending-token';
                 const showQueue = [
-                    ...allAppts.filter(a => a.doctor_id === appt.doctor_id && a.status === 'Completed').slice(-3),
+                    ...liveAppts.filter(a => a.doctor_id === appt.doctor_id && a.status === 'Completed').slice(-3),
                     ...docQueue
                 ].slice(-10);
                 const dots = buildDots(showQueue, appt.token, nowToken);
@@ -1051,7 +1055,7 @@
                         : 'No patient currently being served';
                     document.getElementById('waitingCount').textContent = pending.length;
                     document.getElementById('completedCount').textContent =
-                        allAppts.filter(a => a.doctor_id === appt.doctor_id && a.status === 'Completed').length;
+                        liveAppts.filter(a => a.doctor_id === appt.doctor_id && a.status === 'Completed').length;
 
                     queueCard.style.display = 'block';
                     document.getElementById('queueBadge').textContent = docQueue.length + ' in queue';

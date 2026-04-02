@@ -491,7 +491,7 @@
       tbody.innerHTML = appts.map((a, i) => {
         const doc = doctors.find(d => d.id === a.doctor_id);
         const prx = a.prescription ? `<a href="patient_prescription.html?apptId=${a.id}" class="btn btn-outline btn-sm">📄 View Rx</a>` : '<span class="text-muted">—</span>';
-        const cancel = (a.status === 'Pending' || a.status === 'Confirmed') ? `<button class="btn btn-danger btn-sm" onclick="cancelAppt('${a.id}')">Cancel</button>` : '';
+        const cancel = (a.status === 'Pending' || a.status === 'Confirmed') ? `<button class="btn btn-danger btn-sm" onclick="cancelAppt('${a.id}')">Cancel</button>` : (a.status === 'Cancelled' || a.status === 'Completed' ? `<button class="btn btn-danger btn-sm" onclick="removeAppt('${a.id}')">🗑️ Remove</button>` : '');
         return `<tr style="animation:slideIn .35s ${i * .04}s ease both;">
         <td class="text-muted" style="font-size:.8rem;">${i + 1}</td>
         <td><div style="font-weight:700;">${doc ? doc.name : '—'}</div><div class="text-muted" style="font-size:.75rem;">${doc ? doc.speciality : ''}</div></td>
@@ -510,6 +510,12 @@
       if (!confirm('Cancel this appointment?')) return;
       await DB.cancelAppointment(id);
       showAlert('alert-box', 'Appointment cancelled.', 'success');
+      renderTable();
+    }
+    async function removeAppt(id) {
+      if (!confirm('Remove this appointment from your history?')) return;
+      await DB.hideAppointmentPatient(id);
+      showAlert('alert-box', 'Appointment removed from your history.', 'success');
       renderTable();
     }
     renderTable();

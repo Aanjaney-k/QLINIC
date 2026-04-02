@@ -815,10 +815,73 @@
     // Time slots
     document.getElementById('date').min = new Date().toISOString().split('T')[0];
     const slots = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'];
-    const grid = document.getElementById('timeGrid');
-    grid.innerHTML = slots.map((s, i) =>
-      `<div class="time-slot" style="animation-delay:${i * .04}s" onclick="selectSlot('${s}',this)">${s}</div>`
-    ).join('');
+
+    async function renderTimeSlots() {
+      const doctorId = document.getElementById('doctor').value;
+      const date = document.getElementById('date').value;
+      const grid = document.getElementById('timeGrid');
+      let bookedTimes = [];
+      if (doctorId && date) {
+        try {
+          const doctorAppts = await DB.getAppointmentsByDoctor(doctorId);
+          bookedTimes = doctorAppts.filter(a => a.date === date && a.status !== 'Cancelled').map(a => a.time);
+        } catch (e) { }
+      }
+      // Reset selected time
+      document.getElementById('time').value = '';
+      document.getElementById('timeDisplay').value = '';
+      grid.innerHTML = slots.map((s, i) => {
+        const isBooked = bookedTimes.includes(s);
+        return isBooked
+          ? `<div class="time-slot" style="animation-delay:${i * .04}s;opacity:.45;cursor:not-allowed;background:#fee2e2;border-color:#fca5a5;color:#dc2626;" title="Already booked">${s} 🚫</div>`
+          : `<div class="time-slot" style="animation-delay:${i * .04}s" onclick="selectSlot('${s}',this)">${s}</div>`;
+      }).join('');
+    }
+
+    // Disable non-working days on date picker
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    async function updateDateRestrictions() {
+      const doctorId = document.getElementById('doctor').value;
+      const dateInput = document.getElementById('date');
+      dateInput.value = '';
+      document.getElementById('time').value = '';
+      document.getElementById('timeDisplay').value = '';
+      document.getElementById('timeGrid').innerHTML = '';
+      if (!doctorId) return;
+      const allDoctors = await DB.getDoctors();
+      const doc = allDoctors.find(d => d.id === doctorId);
+      if (!doc || !doc.working_days) return;
+      const workingDays = doc.working_days;
+      // Show working days info
+      const wdDisplay = workingDays.map(d => d.substring(0, 3)).join(', ');
+      let info = document.getElementById('wdInfo');
+      if (!info) {
+        info = document.createElement('div');
+        info.id = 'wdInfo';
+        info.style = 'font-size:.78rem;color:var(--primary);font-weight:600;margin-top:6px;';
+        dateInput.parentNode.appendChild(info);
+      }
+      info.textContent = `📅 Available: ${wdDisplay}`;
+      // Validate selected date is a working day
+      dateInput.addEventListener('change', function () {
+        const selected = new Date(this.value);
+        const dayName = dayNames[selected.getUTCDay()];
+        if (!workingDays.includes(dayName)) {
+          showAlert('alert-box', `⚠️ Dr. ${doc.name} is not available on ${dayName}s. Available: ${wdDisplay}`);
+          this.value = '';
+          document.getElementById('time').value = '';
+          document.getElementById('timeDisplay').value = '';
+          document.getElementById('timeGrid').innerHTML = '';
+          return;
+        }
+        renderTimeSlots();
+      }, { once: false });
+    }
+
+    // Re-render slots when doctor or date changes
+    document.getElementById('doctor').addEventListener('change', () => { updateDateRestrictions(); renderTimeSlots(); });
+    document.getElementById('date').addEventListener('change', renderTimeSlots);
+    renderTimeSlots();
 
     function selectSlot(t, el) {
       document.querySelectorAll('.time-slot').forEach(x => x.classList.remove('selected'));
@@ -835,9 +898,16 @@
       const time = document.getElementById('time').value;
       if (!doctorId || !date || !time) return showAlert('alert-box', 'Please fill in all fields and select a time slot.');
       try {
+        // Check if THIS patient already booked this doctor on this date
         const existing = await DB.getAppointmentsByPatient(session.id);
         const dup = existing.find(a => a.doctor_id === doctorId && a.date === date && a.status !== 'Cancelled');
-        if (dup) return showAlert('alert-box', 'You already have an appointment with this doctor on that date.');
+        if (dup) return showAlert('alert-box', '⚠️ You already have an appointment with this doctor on that date.', 'warning');
+
+        // Check if the time slot is already booked by anyone
+        const doctorAppts = await DB.getAppointmentsByDoctor(doctorId);
+        const slotTaken = doctorAppts.find(a => a.date === date && a.time === time && a.status !== 'Cancelled');
+        if (slotTaken) return showAlert('alert-box', '⚠️ This time slot is already booked. Please choose a different time.', 'warning');
+
         const appt = await DB.bookAppointment({
           patientId: session.id, doctorId, date, time,
           hospitalId: selectedHosp ? selectedHosp.id : null

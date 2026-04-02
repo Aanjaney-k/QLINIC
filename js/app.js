@@ -6,7 +6,7 @@
    ============================================================ */
 
 const SUPABASE_URL = 'https://bxasvcackgszdmhurrje.supabase.co';   // ← change
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4YXN2Y2Fja2dzemRtaHVycmplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5NDMxMDgsImV4cCI6MjA5MDUxOTEwOH0.RP04Cc7EbjJMqtjY1NDdK-ghLyKpyle_qMMKFkFjuJc';                       // ← change
+const SUPABASE_ANON = 'sb_publishable_F1oYo-mLyKik6KI5VehJfA_qlOGmetz';                       // ← change
 
 /* ── Supabase client (loaded from CDN script tag in HTML) ── */
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -143,13 +143,24 @@ const DB = {
     const { data } = await _supabase.from('doctors').select('*').eq('id', id).single();
     return data;
   },
-  async addDoctor({ hospitalId, name, email, speciality, phone }) {
+  async addDoctor({ hospitalId, name, email, password, speciality, phone, workingDays }) {
+    // 1. Create auth account
+    const { data: authData, error: authErr } = await _supabase.auth.signUp({ email, password });
+    if (authErr) throw authErr;
+
+    const authUserId = authData?.user?.id ?? null;
+
+    // 2. Generate new doctor ID
     const { data: existing } = await _supabase.from('doctors').select('id');
     const nums = (existing || []).map(d => parseInt(d.id.replace('D', '')) || 0);
     const newId = 'D' + String((Math.max(0, ...nums) + 1)).padStart(3, '0');
+
+    // 3. Insert doctor row
     const { error } = await _supabase.from('doctors').insert({
       id: newId, hospital_id: hospitalId, name, email,
-      speciality, phone: phone || null, available: true
+      speciality, phone: phone || null, available: true,
+      working_days: workingDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+      auth_user_id: authUserId
     });
     if (error) throw error;
     return newId;
@@ -161,8 +172,7 @@ const DB = {
     if (error) throw error;
   },
   async deleteDoctor(id) {
-    await _supabase.from('appointments').delete().eq('doctor_id', id);
-    const { error } = await _supabase.from('doctors').delete().eq('id', id);
+    const { error } = await _supabase.rpc('delete_doctor_with_auth', { doctor_id: id });
     if (error) throw error;
   },
 
@@ -221,6 +231,15 @@ const DB = {
 
   async savePrescription(appointmentId, prescription) {
     await this.updateAppointment(appointmentId, { prescription, status: 'Completed' });
+  },
+
+  /* Helper for filtering */
+  getTodayDate() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 };
 
@@ -242,11 +261,7 @@ const SuperDB = {
     if (hErr) throw hErr;
 
     const adminEmail = adminUsername + '@qlinic.com';
-    const { data: authData, error: authErr } = await _supabase.auth.signUp({
-      email: adminEmail,
-      password: adminPassword,
-      options: { data: { role: 'admin' }, emailRedirectTo: null }
-    });
+    const { data: authData, error: authErr } = await _supabase.auth.signUp({ email: adminEmail, password: adminPassword });
     if (authErr) throw authErr;
 
     const admins = await this.getAdmins();
@@ -292,11 +307,95 @@ const HospitalSession = {
 /* ============================================================
    UI Helpers  – unchanged
    ============================================================ */
+// ── Toast Popup System ──
+(function () {
+  const style = document.createElement('style');
+  style.textContent = `
+    #ql-toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+    .ql-toast {
+      min-width: 280px;
+      max-width: 380px;
+      padding: 14px 18px;
+      border-radius: 14px;
+      font-size: .875rem;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.15);
+      pointer-events: all;
+      animation: toastIn .35s cubic-bezier(.34,1.56,.64,1) both;
+      cursor: pointer;
+      line-height: 1.4;
+    }
+    .ql-toast.hiding {
+      animation: toastOut .3s ease forwards;
+    }
+    .ql-toast-icon {
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+    .ql-toast-msg { flex: 1; }
+    .ql-toast-close {
+      font-size: .9rem;
+      opacity: .6;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .ql-toast.error   { background: #fef2f2; border: 1.5px solid #fca5a5; color: #dc2626; }
+    .ql-toast.success { background: #f0fdf4; border: 1.5px solid #86efac; color: #16a34a; }
+    .ql-toast.warning { background: #fffbeb; border: 1.5px solid #fcd34d; color: #d97706; }
+    .ql-toast.info    { background: #eff6ff; border: 1.5px solid #93c5fd; color: #2563eb; }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(60px) scale(.9); }
+      to   { opacity: 1; transform: translateX(0) scale(1); }
+    }
+    @keyframes toastOut {
+      from { opacity: 1; transform: translateX(0) scale(1); }
+      to   { opacity: 0; transform: translateX(60px) scale(.9); }
+    }
+  `;
+  document.head.appendChild(style);
+  const container = document.createElement('div');
+  container.id = 'ql-toast-container';
+  document.body.appendChild(container);
+})();
+
+function showToast(msg, type = 'error', duration = 4000) {
+  const icons = { error: '❌', success: '✅', warning: '⚠️', info: 'ℹ️' };
+  const container = document.getElementById('ql-toast-container');
+  if (!container) return;
+  const toast = document.createElement('div');
+  toast.className = `ql-toast ${type}`;
+  toast.innerHTML = `<span class="ql-toast-icon">${icons[type] || '🔔'}</span><span class="ql-toast-msg">${msg}</span><span class="ql-toast-close">✕</span>`;
+  container.appendChild(toast);
+  const remove = () => {
+    toast.classList.add('hiding');
+    setTimeout(() => toast.remove(), 300);
+  };
+  toast.querySelector('.ql-toast-close').addEventListener('click', remove);
+  toast.addEventListener('click', remove);
+  setTimeout(remove, duration);
+}
+
 function showAlert(containerId, msg, type = 'error') {
+  // Show toast popup
+  showToast(msg, type);
+  // Also update inline container if it exists (for backward compat)
   const el = document.getElementById(containerId);
-  if (!el) return;
-  el.innerHTML = `<div class="alert alert-${type === 'error' ? 'error' : type}">${msg}</div>`;
-  setTimeout(() => { el.innerHTML = ''; }, 4000);
+  if (el) {
+    el.innerHTML = '';
+  }
 }
 
 function formatDate(d) {

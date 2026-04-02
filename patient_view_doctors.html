@@ -457,6 +457,7 @@
     async function renderDoctors() {
       const q = document.getElementById('searchInput').value.toLowerCase();
       const [allDoctors, allHospitals] = await Promise.all([DB.getDoctors(), SuperDB.getHospitals()]);
+      const hospitalMap = {};  // ← this line was missing!
       allHospitals.forEach(h => hospitalMap[h.id] = h);
       const doctors = allDoctors.filter(d => !q || d.name.toLowerCase().includes(q) || d.speciality.toLowerCase().includes(q));
       const grid = document.getElementById('doctorGrid');
@@ -486,7 +487,7 @@
             </div>
             <div style="margin-top:14px;">
               ${d.available
-            ? `<a href="patient_book_appointment.html?doctorId=${d.id}" class="btn btn-primary w-100" style="justify-content:center;">Book Appointment</a>`
+            ? ``
             : `<button class="btn btn-outline w-100" style="justify-content:center;opacity:.5;cursor:not-allowed;" disabled>Not Available</button>`}
             </div>
           </div>

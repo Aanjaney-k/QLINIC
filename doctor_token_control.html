@@ -694,7 +694,9 @@
     const session = Auth.requireRole('doctor', 'doctor_login.html');
 
     async function render() {
-      const allAppts = await DB.getAppointmentsByDoctor(session.id);
+      let allAppts = await DB.getAppointmentsByDoctor(session.id);
+      const today = DB.getTodayDate();
+      allAppts = allAppts.filter(a => a.date === today);
       const patients = await DB.getPatients();
       const queue = allAppts.filter(a => a.status === 'Pending' || a.status === 'Confirmed').sort((a, b) => a.token - b.token);
       const serving = queue.find(a => a.status === 'Confirmed') || null;
@@ -723,7 +725,9 @@
     }
 
     async function callNext() {
-      const allAppts = await DB.getAppointmentsByDoctor(session.id);
+      let allAppts = await DB.getAppointmentsByDoctor(session.id);
+      const today = DB.getTodayDate();
+      allAppts = allAppts.filter(a => a.date === today);
       const pending = allAppts.filter(a => a.status === 'Pending').sort((a, b) => a.token - b.token);
       if (!pending.length) { alert('No more patients in the queue!'); return; }
       // Complete currently confirmed

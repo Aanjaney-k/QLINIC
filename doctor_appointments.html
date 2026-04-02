@@ -541,6 +541,8 @@
     async function renderTable() {
       let appts = await DB.getAppointmentsByDoctor(session.id);
       const patients = await DB.getPatients();
+      const today = DB.getTodayDate();
+      appts = appts.filter(a => a.date === today);
       if (currentFilter !== 'all') appts = appts.filter(a => a.status === currentFilter);
       appts = appts.reverse();
       const tbody = document.getElementById('apptTable');
@@ -553,6 +555,7 @@
         ${a.status === 'Pending' ? `<button class="btn btn-outline btn-sm" onclick="updateStatus('${a.id}','Confirmed')">✓ Confirm</button>` : ''}
         ${a.status === 'Confirmed' ? `<button class="btn btn-outline btn-sm" onclick="updateStatus('${a.id}','Completed')">✔ Complete</button>` : ''}
         ${canWrite ? `<button class="btn btn-primary btn-sm" onclick="openPrescription('${a.id}','${p ? p.name.replace(/'/g, '') : ''}','${a.token}')">${hasPrx ? '✏️ Edit Rx' : '+ Prescription'}</button>` : ''}
+        ${a.status === 'Completed' ? `<button class="btn btn-danger btn-sm" onclick="removeAppt('${a.id}')">🗑️ Remove</button>` : ''}
       `;
         return `<tr style="animation:slideIn .35s ${i * .04}s ease both;">
         <td class="text-muted" style="font-size:.8rem;">${i + 1}</td>
@@ -572,6 +575,12 @@
     }
     async function updateStatus(id, s) {
       await DB.updateAppointment(id, { status: s });
+      renderTable();
+    }
+    async function removeAppt(id) {
+      if (!confirm('Remove this completed appointment from your view?')) return;
+      await DB.hideAppointmentDoctor(id);
+      showAlert('alert-box', 'Appointment removed from your view.', 'success');
       renderTable();
     }
     async function openPrescription(id, name, token) {

@@ -691,7 +691,9 @@
 
         async function init() {
             _hospitals = (await SuperDB.getHospitals()).filter(h => h.status === 'active');
-            const myAppts = await DB.getAppointmentsByPatient(session.id);
+            let myAppts = await DB.getAppointmentsByPatient(session.id);
+            const today = DB.getTodayDate();
+            myAppts = myAppts.filter(a => a.date === today);
             const myActive = myAppts.find(a => a.status === 'Pending' || a.status === 'Confirmed');
             if (myActive && myActive.hospital_id) {
                 activeHospId = myActive.hospital_id;
@@ -724,7 +726,9 @@
         }
 
         async function renderCards() {
-            const allAppts = await DB.getAppointments();
+            let allAppts = await DB.getAppointments();
+            const today = DB.getTodayDate();
+            allAppts = allAppts.filter(a => a.date === today);
             const patients = await DB.getPatients();
             const allDocs = await DB.getDoctors();
             const myAppts = allAppts.filter(a => a.patient_id === session.id);

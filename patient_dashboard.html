@@ -801,11 +801,15 @@
         </div>
       </div>
 
-      <!-- Doctor selector -->
-      <div style="margin-bottom:20px;">
+      <!-- Hospital + Doctor selector -->
+      <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+        <select id="tdHospitalSelect" class="form-control" onchange="tdOnHospitalChange()"
+          style="flex:1;min-width:200px;height:44px;border-radius:10px;font-weight:500;font-size:.875rem;">
+          <option value="">🏥 Select Hospital...</option>
+        </select>
         <select id="tdDoctorSelect" class="form-control" onchange="tdUpdateBoard()"
-          style="max-width:360px;height:44px;border-radius:10px;font-weight:500;font-size:.875rem;">
-          <option value="">Loading doctors...</option>
+          style="flex:1;min-width:200px;height:44px;border-radius:10px;font-weight:500;font-size:.875rem;">
+          <option value="">👨‍⚕️ Select Doctor...</option>
         </select>
       </div>
 
@@ -908,7 +912,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/app.js"></script>
+    <script src="js/app.js"></script>
   <script>
     window.addEventListener('load', () => setTimeout(() => document.getElementById('loader').classList.add('gone'), 1100));
     window.addEventListener('scroll', () => document.getElementById('scrollTop').classList.toggle('visible', window.scrollY > 300));
@@ -962,35 +966,9 @@
       animCount(document.getElementById('statConfirmed'), appts.filter(a => a.status === 'Confirmed').length);
       animCount(document.getElementById('statCompleted'), appts.filter(a => a.status === 'Completed').length);
 
-      const hospitals = (await SuperDB.getHospitals()).filter(h => h.status === 'active');
-      const grid = document.getElementById('hospitalsGrid');
-      const selected = HospitalSession.get();
-      if (!hospitals.length) {
-        grid.innerHTML = `<div class="no-hospitals" style="grid-column:1/-1;"><div class="ni">🏥</div><p>No hospitals available yet.</p></div>`;
-      } else {
-        grid.innerHTML = hospitals.map((h, i) => `
-          <div class="hosp-card ${selected && selected.id === h.id ? 'selected' : ''}"
-               style="animation:fadeUp .4s ${i * .07}s ease both;"
-               onclick="selectHospital('${h.id}','${h.name.replace(/'/g, "\\'")}','${h.city.replace(/'/g, "\\'")}')">
-            <div class="hosp-icon">🏥</div>
-            <div class="hosp-name">${h.name}</div>
-            <div class="hosp-city">📍 ${h.city}</div>
-            <div class="hosp-status"><span class="dot"></span> Active</div>
-          </div>`).join('');
-      }
       updateSelectedBar();
       const h = HospitalSession.get();
       if (h) document.getElementById('bannerSub').textContent = `Booking at ${h.name}`;
-
-      // Recent appointments
-      const recent = appts.slice(-5).reverse();
-      if (recent.length) {
-        const doctors = await DB.getDoctors();
-        document.getElementById('recentTable').innerHTML = recent.map((a, i) => {
-          const doc = doctors.find(d => d.id === a.doctor_id);
-          return `<tr style="animation:slideIn .35s ${i * .05}s ease both;"><td><strong>${doc ? doc.name : '—'}</strong></td><td><span class="text-muted">${doc ? doc.speciality : '—'}</span></td><td>${formatDate(a.date)}</td><td><span style="font-family:var(--mono);font-weight:700;color:var(--primary);">#${a.token}</span></td><td>${statusBadge(a.status)}</td></tr>`;
-        }).join('');
-      }
 
       await tdInitBoard(appts);
     }
@@ -1003,26 +981,57 @@
 
     // ── Embedded Token Display Board ──
     async function tdInitBoard(appts) {
+      // Load hospitals into selector
+      const hospitals = (await SuperDB.getHospitals()).filter(h => h.status === 'active');
+      const hospitalSelect = document.getElementById('tdHospitalSelect');
+      hospitalSelect.innerHTML = '<option value="">🏥 Select Hospital...</option>' +
+        hospitals.map(h => `<option value="${h.id}">${h.name} – ${h.city}</option>`).join('');
+
+      // Auto-select hospital if patient has an active appointment
       const myActiveAppt = (appts || await DB.getAppointmentsByPatient(session.id))
         .find(a => a.patient_id === session.id && (a.status === 'Pending' || a.status === 'Confirmed'));
 
       let bookedHospitalId = myActiveAppt ? myActiveAppt.hospital_id : null;
       if (!bookedHospitalId) { const hs = HospitalSession.get(); if (hs) bookedHospitalId = hs.id; }
 
-      const allDoctors = (await DB.getDoctors()).filter(d => d.available);
-      const doctors = bookedHospitalId ? allDoctors.filter(d => d.hospital_id === bookedHospitalId) : allDoctors;
+      if (bookedHospitalId) {
+        hospitalSelect.value = bookedHospitalId;
+        await tdLoadDoctors(bookedHospitalId, myActiveAppt);
+      }
+    }
 
-      const select = document.getElementById('tdDoctorSelect');
-      if (!doctors.length) { select.innerHTML = '<option value="">No doctors available</option>'; return; }
-      select.innerHTML = doctors.map(d => `<option value="${d.id}">${d.name} (${d.speciality})</option>`).join('');
-      if (myActiveAppt) { const myDoc = doctors.find(d => d.id === myActiveAppt.doctor_id); if (myDoc) select.value = myDoc.id; }
-      await tdUpdateBoard();
+    async function tdOnHospitalChange() {
+      const hospitalId = document.getElementById('tdHospitalSelect').value;
+      const doctorSelect = document.getElementById('tdDoctorSelect');
+      doctorSelect.innerHTML = '<option value="">👨‍⚕️ Select Doctor...</option>';
+      document.getElementById('tdServingToken').textContent = '#—';
+      document.getElementById('tdServingName').textContent = 'Select a doctor';
+      document.getElementById('tdServingTime').textContent = '';
+      document.getElementById('tdPrevToken').textContent = '#—';
+      document.getElementById('tdPrevName').textContent = 'Recently Served';
+      document.getElementById('tdNextQueue').innerHTML = '<div style="text-align:center;color:var(--text-soft);padding:14px;font-size:.85rem;">Select a hospital and doctor</div>';
+      if (!hospitalId) return;
+      await tdLoadDoctors(hospitalId, null);
+    }
+
+    async function tdLoadDoctors(hospitalId, myActiveAppt) {
+      const allDoctors = (await DB.getDoctors()).filter(d => d.available && d.hospital_id === hospitalId);
+      const doctorSelect = document.getElementById('tdDoctorSelect');
+      if (!allDoctors.length) { doctorSelect.innerHTML = '<option value="">No doctors available</option>'; return; }
+      doctorSelect.innerHTML = '<option value="">👨‍⚕️ Select Doctor...</option>' +
+        allDoctors.map(d => `<option value="${d.id}">${d.name} (${d.speciality})</option>`).join('');
+      if (myActiveAppt) {
+        const myDoc = allDoctors.find(d => d.id === myActiveAppt.doctor_id);
+        if (myDoc) { doctorSelect.value = myDoc.id; await tdUpdateBoard(); }
+      }
     }
 
     async function tdUpdateBoard() {
       const doctorId = document.getElementById('tdDoctorSelect').value;
       if (!doctorId) return;
-      const appointments = await DB.getAppointmentsByDoctor(doctorId);
+      const today = DB.getTodayDate();
+      let appointments = await DB.getAppointmentsByDoctor(doctorId);
+      appointments = appointments.filter(a => a.date === today);
       const patients = await DB.getPatients();
 
       const serving = appointments.find(a => a.status === 'Confirmed');
@@ -1069,6 +1078,7 @@
 
     // Init board after stats load
     setTimeout(() => { loadDashboard(); }, 1200);
+    setTimeout(() => { tdInitBoard(null); }, 1500);
     setInterval(tdUpdateBoard, 5000);
 
 

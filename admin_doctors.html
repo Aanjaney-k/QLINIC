@@ -578,6 +578,39 @@
             <label>Phone</label>
             <input type="tel" id="docPhone" class="form-control" placeholder="10-digit number" required />
           </div>
+          <div class="form-group" style="grid-column:1/-1;">
+            <label>Working Days</label>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;" id="workingDaysGroup">
+              <label
+                style="display:flex;align-items:center;gap:5px;cursor:pointer;background:var(--surface-2);padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:.82rem;font-weight:600;">
+                <input type="checkbox" value="Monday" checked /> Mon
+              </label>
+              <label
+                style="display:flex;align-items:center;gap:5px;cursor:pointer;background:var(--surface-2);padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:.82rem;font-weight:600;">
+                <input type="checkbox" value="Tuesday" checked /> Tue
+              </label>
+              <label
+                style="display:flex;align-items:center;gap:5px;cursor:pointer;background:var(--surface-2);padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:.82rem;font-weight:600;">
+                <input type="checkbox" value="Wednesday" checked /> Wed
+              </label>
+              <label
+                style="display:flex;align-items:center;gap:5px;cursor:pointer;background:var(--surface-2);padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:.82rem;font-weight:600;">
+                <input type="checkbox" value="Thursday" checked /> Thu
+              </label>
+              <label
+                style="display:flex;align-items:center;gap:5px;cursor:pointer;background:var(--surface-2);padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:.82rem;font-weight:600;">
+                <input type="checkbox" value="Friday" checked /> Fri
+              </label>
+              <label
+                style="display:flex;align-items:center;gap:5px;cursor:pointer;background:var(--surface-2);padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:.82rem;font-weight:600;">
+                <input type="checkbox" value="Saturday" /> Sat
+              </label>
+              <label
+                style="display:flex;align-items:center;gap:5px;cursor:pointer;background:var(--surface-2);padding:6px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:.82rem;font-weight:600;">
+                <input type="checkbox" value="Sunday" /> Sun
+              </label>
+            </div>
+          </div>
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
           <button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>
@@ -659,6 +692,7 @@
           <div class="doc-spec">🏷️ ${d.speciality}</div>
           <div class="doc-phone">📞 ${d.phone} · 📧 ${d.email}</div>
           <div style="margin-top:8px;"><span class="badge badge-blue">${count} appointment${count !== 1 ? 's' : ''}</span></div>
+          <div style="margin-top:6px;font-size:.72rem;color:var(--text-muted);font-weight:600;">📅 ${d.working_days ? d.working_days.map(day => day.substring(0, 3)).join(', ') : 'Mon–Sat'}</div>
           <div class="doc-actions">
             <button class="btn btn-outline btn-sm" onclick="toggleAvail('${d.id}')" style="flex:1;">
               ${d.available ? 'Mark Unavailable' : 'Mark Available'}
@@ -678,9 +712,14 @@
     async function deleteDoctor(id, name, count) {
       const msg = count > 0 ? `${name} has ${count} appointment(s). Deleting will remove all their appointments. Continue?` : `Delete Dr. ${name}? This cannot be undone.`;
       if (!confirm(msg)) return;
-      await DB.deleteDoctor(id);
-      showAlert('alert-box', `${name} has been removed.`, 'success');
-      renderDoctors();
+      try {
+        await DB.deleteDoctor(id);
+        showAlert('alert-box', `${name} has been removed.`, 'success');
+        renderDoctors();
+      } catch (err) {
+        showAlert('alert-box', `Failed to delete: ${err.message}`, 'danger');
+        console.error(err);
+      }
     }
 
     function openAddModal() { document.getElementById('addModal').classList.add('open'); }
@@ -696,9 +735,13 @@
       const email = document.getElementById('docEmail').value.trim().toLowerCase();
       const spec = document.getElementById('docSpec').value.trim();
       const phone = document.getElementById('docPhone').value.trim();
+      const password = document.getElementById('docPass').value.trim();
+      const workingDays = Array.from(document.querySelectorAll('#workingDaysGroup input[type=checkbox]:checked')).map(c => c.value);
       if (!name || !email || !spec || !phone) return showAlert('modal-alert', 'Please fill in all fields.');
+      if (!password) return showAlert('modal-alert', 'Please set a password for the doctor.');
+      if (!workingDays.length) return showAlert('modal-alert', 'Please select at least one working day.');
       try {
-        await DB.addDoctor({ hospitalId: hId, name, email, speciality: spec, phone });
+        await DB.addDoctor({ hospitalId: hId, name, email, password, speciality: spec, phone, workingDays });
         closeModal();
         showAlert('alert-box', `${name} added successfully!`, 'success');
         renderDoctors();
