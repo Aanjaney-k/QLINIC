@@ -556,6 +556,12 @@
       _allAppts = await DB.getAppointmentsByHospital(hId);
       _allPatients = await DB.getPatients();
       _allDoctors = await DB.getDoctorsByHospital(hId);
+
+      const cancelled = await DB.autoCancelPastAppointments(_allAppts);
+      if (cancelled > 0) {
+        showToast(`${cancelled} past appointment${cancelled > 1 ? 's' : ''} auto-cancelled.`, 'warning', 5000);
+      }
+
       animCount(document.getElementById('statTotal'), _allAppts.length);
       animCount(document.getElementById('statPending'), _allAppts.filter(a => a.status === 'Pending').length);
       animCount(document.getElementById('statConfirmed'), _allAppts.filter(a => a.status === 'Confirmed').length);

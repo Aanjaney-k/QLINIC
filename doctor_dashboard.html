@@ -670,6 +670,9 @@
 
     async function loadDashboard() {
       let appts = await DB.getAppointmentsByDoctor(session.id);
+
+      await DB.autoCancelPastAppointments(appts);
+
       const today = DB.getTodayDate();
       appts = appts.filter(a => a.date === today);
       const patients = await DB.getPatients();

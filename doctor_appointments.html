@@ -474,6 +474,12 @@
       <button class="btn btn-outline btn-sm" onclick="filterAppts('Pending')" id="btn-Pending">⏳ Pending</button>
       <button class="btn btn-outline btn-sm" onclick="filterAppts('Confirmed')" id="btn-Confirmed">✅ Confirmed</button>
       <button class="btn btn-outline btn-sm" onclick="filterAppts('Completed')" id="btn-Completed">🏁 Completed</button>
+      <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;">
+        <label style="font-size:.8rem;color:var(--text-soft);white-space:nowrap;">📅 Filter by Date</label>
+        <input type="date" id="dateFilter" class="form-control" style="width:160px;padding:6px 10px;font-size:.85rem;"
+          onchange="renderTable()" />
+        <button class="btn btn-outline btn-sm" onclick="clearDateFilter()">✕ Clear</button>
+      </div>
     </div>
     <div class="card anim-fadeup">
       <div class="table-wrap">
@@ -538,11 +544,21 @@
     const session = Auth.requireRole('doctor', 'doctor_login.html');
     let currentFilter = 'all', currentApptId = null;
 
+    let _autoCancelledOnce = false;
     async function renderTable() {
       let appts = await DB.getAppointmentsByDoctor(session.id);
+
+      // Auto-cancel past Pending/Confirmed appointments once per page load
+      if (!_autoCancelledOnce) {
+        _autoCancelledOnce = true;
+        await DB.autoCancelPastAppointments(appts);
+      }
+
       const patients = await DB.getPatients();
       const today = DB.getTodayDate();
-      appts = appts.filter(a => a.date === today);
+      const selectedDate = document.getElementById('dateFilter').value;
+      const activeDate = selectedDate || today;
+      appts = appts.filter(a => a.date === activeDate);
       if (currentFilter !== 'all') appts = appts.filter(a => a.status === currentFilter);
       appts = appts.reverse();
       const tbody = document.getElementById('apptTable');
@@ -566,6 +582,11 @@
         <td><div style="display:flex;gap:6px;flex-wrap:wrap;">${actions}</div></td>
       </tr>`;
       }).join('');
+    }
+
+    function clearDateFilter() {
+      document.getElementById('dateFilter').value = '';
+      renderTable();
     }
 
     function filterAppts(f) {

@@ -774,6 +774,9 @@
     async function loadDashboard() {
       const allDoctors = await DB.getDoctorsByHospital(hId);
       const allAppts = await DB.getAppointmentsByHospital(hId);
+
+      await DB.autoCancelPastAppointments(allAppts);
+
       const allPatients = await DB.getPatients();
       const hospitalPatientIds = new Set(allAppts.map(a => a.patient_id));
       const patients = allPatients.filter(p => hospitalPatientIds.has(p.id));

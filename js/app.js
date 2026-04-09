@@ -240,6 +240,21 @@ const DB = {
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
+  },
+
+  async autoCancelPastAppointments(appointments) {
+    const today = this.getTodayDate();
+    const toCancel = (appointments || []).filter(
+      a => a.date < today && (a.status === 'Pending' || a.status === 'Confirmed')
+    );
+    if (!toCancel.length) return 0;
+    await Promise.all(
+      toCancel.map(a =>
+        _supabase.from('appointments').update({ status: 'Cancelled' }).eq('id', a.id)
+      )
+    );
+    toCancel.forEach(a => { a.status = 'Cancelled'; });
+    return toCancel.length;
   }
 };
 
